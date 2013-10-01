@@ -9,6 +9,8 @@ $string['debug_mode_key']='Verbose mode';
 $string['debug_mode']='Turn on or off the verbose mode when running the script';
 $string['autocreate_cohorts_key']='Autocreate missing cohorts';
 $string['autocreate_cohorts']='if false will not create missing cohorts (admin must create them before) ';
+$string['login_sync_key']='Sync at login user';
+$string['login_sync']='Enable syncing during interactive login ';
 
 $string['autocreate_users_key']='Autocreate missing users';
 $string['autocreate_users']='if false will not create missing users ';
