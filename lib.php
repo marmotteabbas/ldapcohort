@@ -258,7 +258,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 	
 	                $cohortname = strtoupper($cohort[$this->config->cohort_name][0]);
 	
-	                $moodle_cohort = $DB->get_record('cohort', array ( 'name' => $cohortname ));
+	                $moodle_cohort = $DB->get_record('cohort', array ( $this->config->cohort_syncing_field => $cohortname ));
 	                if (empty($moodle_cohort)) {
 						if ($this->config->autocreate_cohorts) {
 		                    if (false != ($cohortid = $this->create_cohort($cohort))) {
@@ -285,7 +285,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 	                    $trace->output(get_string('err_create_cohort', 'enrol_ldapcohort', $cohortname));
 	                    continue;
 	                }
-	                $this->_cohorts [$moodle_cohort->idnumber] = $moodle_cohort;
+	                $this->_cohorts[$moodle_cohort->idnumber] = $moodle_cohort;
 	
 	                if (!empty($cohort[$this->config->cohort_member_attribute])) {
 						$membership = array($cohort[$this->config->cohort_member_attribute]);
