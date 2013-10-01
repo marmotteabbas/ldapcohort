@@ -387,21 +387,19 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 
     }
 
-    public function cron($sendEmail = true,progress_trace $trace)
-    {
+    public function cron(){
         $this->load_config();
-
-        echo "-----------------------------\n";
+        $trace = new error_log_progress_trace($this->errorlogtag);
         $this->sync_cohorts($trace);
+        
 
-        echo "-----------------------------\n";
-
-        if ($sendEmail === true && (!empty($this->config->email_report_enabled) && !empty($this->config->email_report))) {
+        if ( (!empty($this->config->email_report_enabled) && !empty($this->config->email_report))) {
             //send email just in case something new was added
             if ($this->_cohorts_added || $this->_users_added) {
                 $this->send_report_email();
             }
         }
+        $trace->finished();
     }
 
     public function send_report_email()
