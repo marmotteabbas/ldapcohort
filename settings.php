@@ -38,6 +38,11 @@ if ($ADMIN->fulltree) {
         $settings->add(new admin_setting_configselect('enrol_ldapcohort/cron_enabled', get_string('cron_enabled_key', 'enrol_ldapcohort'), get_string('cron_enabled', 'enrol_ldapcohort', $run_sync), 1, $yesno));
         $settings->add(new admin_setting_configselect('enrol_ldapcohort/email_report_enabled', get_string('email_report_enabled_key', 'enrol_ldapcohort'), get_string('email_report_enabled', 'enrol_ldapcohort'), 1, $yesno));
         $settings->add(new admin_setting_ldapcohort_trim_lower('enrol_ldapcohort/email_report', get_string('email_report_key', 'enrol_ldapcohort'), get_string('email_report', 'enrol_ldapcohort'), '', true));
+        $settings->add(new aadmin_setting_configcheckbox('enrol_ldapcohort/by_groups', get_string('by_groups_key', 'enrol_ldapcohort'), get_string('by_groups', 'enrol_ldapcohort'), false));
+        $settings->add(new aadmin_setting_configcheckbox('enrol_ldapcohort/autocreate_cohorts', get_string('autocreate_cohorts_key', 'enrol_ldapcohort'), get_string('autocreate_cohorts', 'enrol_ldapcohort'), false));
+        $settings->add(new aadmin_setting_configcheckbox('enrol_ldapcohort/autocreate_users', get_string('autocreate_users_key', 'enrol_ldapcohort'), get_string('autocreate_users', 'enrol_ldapcohort'), false));
+        $settings->add(new aadmin_setting_configcheckbox('enrol_ldapcohort/login_sync', get_string('login_sync_key', 'enrol_ldapcohort'), get_string('login_sync', 'enrol_ldapcohort'), false));
+        $settings->add(new aadmin_setting_configcheckbox('enrol_ldapcohort/debug_mode', get_string('debug_mode_key', 'enrol_ldapcohort'), get_string('debug_mode', 'enrol_ldapcohort'), false));
         
         
         //--- connection settings ---

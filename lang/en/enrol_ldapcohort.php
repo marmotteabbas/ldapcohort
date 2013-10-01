@@ -2,6 +2,18 @@
 
 $string['auth_ldap_noconnect_all'] = 'LDAP-module cannot connect to any servers';
 
+
+$string['by_groups_key']='Synch with LDAP groups ';
+$string['by_groups']='Synch Moodle\'s cohorts with LDAP groups and not with LDAP user attribute';
+$string['debug_mode_key']='Verbose mode';
+$string['debug_mode']='Turn on or off the verbose mode when running the script';
+$string['autocreate_cohorts_key']='Autocreate missing cohorts';
+$string['autocreate_cohorts']='if false will not create missing cohorts (admin must create them before) ';
+
+$string['autocreate_users_key']='Autocreate missing users';
+$string['autocreate_users']='if false will not create missing users ';
+
+
 $string['bind_dn'] = 'If you want to use a bind user to search users, specify it here. Someting like \'cn=ldapuser,ou=public,o=org\'';
 $string['bind_dn_key'] = 'Bind user distinguished name';
 $string['bind_pw'] = 'Password for the bind user';
@@ -70,6 +82,9 @@ $string['server_settings'] = 'LDAP server settings';
 
 $string['synchronized_cohorts'] = 'Done. Synchornized {$a} cohorts.';
 $string['synchronizing_cohorts'] = 'Synchronizing cohorts...';
+$string['cohort_synchronized_with_group']='Cohort synchronized with LDAP group {$a}';
+$string['cohort_synchronized_with_attribute']='Cohort synchronized with LDAP attribute {$a}';
+
 
 $string['user_attribute'] = 'Optional: Overrides the attribute used to name/search users. Usually \'cn\'.';
 $string['user_attribute_key'] = 'User attribute';

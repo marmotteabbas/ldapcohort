@@ -206,15 +206,15 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 				if ($this->config->cohort_search_sub) {
 					// Use ldap_search to find first user from subtree
 					$ldap_result = @ldap_search($this->ldapconnection,
-												$ldap_context,
-												$ldap_search_pattern,
-												$ldap_fields_wanted);
+												$context,
+												$filter,
+												$wanted_fields);
 				} else {
 					// Search only in this context
 					$ldap_result = @ldap_list($this->ldapconnection,
-											  $ldap_context,
-											  $ldap_search_pattern,
-											  $ldap_fields_wanted);
+											  $context,
+											  $filter,
+											  $wanted_fields);
 				}
 				if (!$ldap_result) {
 					continue; // Next
@@ -260,11 +260,13 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 	
 	                $moodle_cohort = $DB->get_record('cohort', array ( 'name' => $cohortname ));
 	                if (empty($moodle_cohort)) {
-	                    if (false != ($cohortid = $this->create_cohort($cohort))) {
-	                        $moodle_cohort = $DB->get_record('cohort', array ('id' => $cohortid));
-	                        $trace->output(get_string('cohort_created', 'enrol_ldapcohort', $moodle_cohort->name));
-	                        $this->_cohorts_added++;
-	                    }
+						if ($this->config->autocreate_cohorts) {
+		                    if (false != ($cohortid = $this->create_cohort($cohort))) {
+		                        $moodle_cohort = $DB->get_record('cohort', array ('id' => $cohortid));
+		                        $trace->output(get_string('cohort_created', 'enrol_ldapcohort', $moodle_cohort->name));
+		                        $this->_cohorts_added++;
+		                    }
+		                }    
 	                } else {
 	                    if (strpos($moodle_cohort->description, '<strong>[LDAP Cohort Sync]</strong>') === false) {
 	                        $moodle_cohort->description = '<strong>[LDAP Cohort Sync]</strong> ' . $moodle_cohort->description;
@@ -293,19 +295,20 @@ class enrol_ldapcohort_plugin extends enrol_plugin
     }
 	public function sync_user_enrolments($user) {
         global $DB;
-
-        // Do not try to print anything to the output because this method is called during interactive login.
-        $trace = new error_log_progress_trace($this->errorlogtag);
-        if (!$this->ldap_connect($trace)) {
-            $trace->finished();
-            return;
-        }
-        
-        
-        
-        $this->ldap_close();
-
-        $trace->finished();
+		if ($this->config->login_sync) {
+	        // Do not try to print anything to the output because this method is called during interactive login.
+	        $trace = new error_log_progress_trace($this->errorlogtag);
+	        if (!$this->ldap_connect($trace)) {
+	            $trace->finished();
+	            return;
+	        }
+	        
+	        
+	        
+	        $this->ldap_close();
+	
+	        $trace->finished();
+		}
 	}
 
     public function sync_users($moodle_cohort, $uid_in = array())
@@ -363,10 +366,12 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 
                 $moodle_user = $DB->get_record( 'user', array ( 'username' => $ldap_user['uid'][0] ) );
 				if (empty($moodle_user)) {
-                    if (false != ($userid = $this->create_user($ldap_user))) {
-                        $moodle_user = $DB->get_record( 'user', array ('id' => $userid) );
-                        $this->_users_added++;
-                    }
+	                if ($this->config->autocreate_users) { 
+	                    if (false != ($userid = $this->create_user($ldap_user))) {
+	                        $moodle_user = $DB->get_record( 'user', array ('id' => $userid) );
+	                        $this->_users_added++;
+	                    }
+	                }    
                 } else {
                     $this->_users_existing++;
                 }
