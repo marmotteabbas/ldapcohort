@@ -270,6 +270,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 									$trace->output("No create cohorte: ".$cohortname."\n");
 								}
 								continue;
+							}
 		                }    
 	                } else {
 	                    if (strpos($moodle_cohort->description, '<strong>[LDAP Cohort Sync]</strong>') === false) {
