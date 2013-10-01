@@ -36,7 +36,7 @@ if ($ADMIN->fulltree) {
         //--- connection settings ---
         $settings->add(new admin_setting_heading('enrol_ldap_cohort_server_settings', get_string('server_settings', 'enrol_ldapcohort'), ''));
         $settings->add(new admin_setting_configtext('enrol_ldapcohort/host_url', get_string('host_url_key', 'enrol_ldapcohort'), get_string('host_url', 'enrol_ldapcohort'), ''));
-        $settings->add(new admin_setting_configselect('enrol_ldapcohort/start_tls', get_string('start_tls_key', 'auth_ldapcohort'), get_string('start_tls', 'auth_ldapcohort'), 0, $yesno));
+        $settings->add(new admin_setting_configselect('enrol_ldapcohort/start_tls', get_string('start_tls_key', 'auth_ldap'), get_string('start_tls', 'auth_ldap'), 0, $yesno));
         // Set LDAPv3 as the default. Nowadays all the servers support it and it gives us some real benefits.
         $options = array(3=>'3', 2=>'2');
         $settings->add(new admin_setting_configselect('enrol_ldapcohort/ldap_version', get_string('version_key', 'enrol_ldapcohort'), get_string('version', 'enrol_ldapcohort'), 3, $options));
