@@ -73,7 +73,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
         global $CFG, $DB;
 
         require_once("{$CFG->dirroot}/cohort/lib.php");
-         if (!$this->ldap_connect($trace)) {
+        if (!$this->ldap_connect($trace)) {
             $trace->finished();
             return;
         }
@@ -125,7 +125,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 					ldap_control_paged_result($this->ldapconnection, $this->config->pagesize, true, $ldap_cookie);
 				}
 
-				if ($this->config->course_search_sub) {
+				if ($this->config->cohort_search_sub) {
 					// Use ldap_search to find first user from subtree
 					$ldap_result = @ldap_search($this->ldapconnection,
 												$ldap_context,

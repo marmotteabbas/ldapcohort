@@ -7,8 +7,13 @@ if ($ADMIN->fulltree) {
     $__do = optional_param('__do', null, PARAM_ALPHA);
     
     if (null !== $__do && $__do == 'ldapcohortsync') {
-        require_once(dirname(__FILE__) . '/sync.php');
-        exit();
+        $enrol = enrol_get_plugin('ldapcohort');
+		$trace = new text_progress_trace();
+		// Update enrolments -- these handlers should autocreate cohortes if required.
+		echo "-----------------------------\n";
+		$enrol>sync_cohorts($trace);
+		echo "-----------------------------\n";
+		exit(0);
     }
     
     require_once(dirname(__FILE__) . '/settingslib.php');
@@ -41,7 +46,8 @@ if ($ADMIN->fulltree) {
         $options = array(3=>'3', 2=>'2');
         $settings->add(new admin_setting_configselect('enrol_ldapcohort/ldap_version', get_string('version_key', 'enrol_ldapcohort'), get_string('version', 'enrol_ldapcohort'), 3, $options));
         $settings->add(new admin_setting_configtext('enrol_ldapcohort/ldapencoding', get_string('ldap_encoding_key', 'enrol_ldapcohort'), get_string('ldap_encoding', 'enrol_ldapcohort'), 'utf-8'));
-        
+        $settings->add(new admin_setting_configtext_trim_lower('enrol_ldap/pagesize', get_string('pagesize_key', 'auth_ldap'), get_string('pagesize', 'auth_ldap'), LDAP_DEFAULT_PAGESIZE, true));
+
         //--- bind settings
         $settings->add(new admin_setting_heading('enrol_ldapcohort_bind_settings', get_string('bind_settings', 'enrol_ldapcohort'), ''));
         $settings->add(new admin_setting_configtext_trim_lower('enrol_ldapcohort/bind_dn', get_string('bind_dn_key', 'enrol_ldapcohort'), get_string('bind_dn', 'enrol_ldapcohort'), ''));

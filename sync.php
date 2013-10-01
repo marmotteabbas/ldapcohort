@@ -8,7 +8,7 @@ require_once("$CFG->libdir/clilib.php");
 $CFG->debug = DEBUG_DEVELOPER;
 
 if (!enrol_is_enabled('ldapcohort')) {
-    cli_error(get_string('pluginnotenabled', 'enrol_ldap'), 2);
+    cli_error(get_string('pluginnotenabled', 'enrol_ldapcohort'), 2);
 }
 
 /** @var enrol_ldap_plugin $enrol */
@@ -16,9 +16,9 @@ $enrol = enrol_get_plugin('ldapcohort');
 
 $trace = new text_progress_trace();
 
-// Update enrolments -- these handlers should autocreate courses if required.
+// Update enrolments -- these handlers should autocreate cohortes if required.
 echo "-----------------------------\n";
-        $enrol>sync_cohorts($trace);
+        $enrol->sync_cohorts($trace);
 
 echo "-----------------------------\n";
 
