@@ -25,7 +25,19 @@ class enrol_ldapcohort_plugin extends enrol_plugin
     public function __construct() {
         global $CFG;
         require_once($CFG->libdir.'/ldaplib.php');
-
+        
+		if (is_enabled_auth('cas')) {
+            $this->authtype = 'cas';
+            $this->roleauth = 'auth_cas';
+            
+        } else if (is_enabled_auth('ldap')){ 
+            $this->authtype = 'ldap';
+            $this->roleauth = 'auth_ldap';
+            
+        } else {
+            error_log('[SYNCH COHORTS] ' . get_string('pluginnotenabled', 'auth_ldap'));
+            die;
+        }
         // Do our own stuff to fix the config (it's easier to do it
         // here than using the admin settings infrastructure). We
         // don't call $this->set_config() for any of the 'fixups'
@@ -410,7 +422,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
         // Prep a few params
         $user->timecreated =  $user->timemodified   = time();
         $user->confirmed  = 1;
-        $user->auth       = 'ldap';
+        $user->auth       = $this->authtype;
         $user->mnethostid = $CFG->mnet_localhost_id;
 		$_s = strtolower(trim($user->suspended));
 		if ($_s == 'false') {

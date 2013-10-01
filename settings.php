@@ -26,8 +26,10 @@ if ($ADMIN->fulltree) {
     if (!function_exists('ldap_connect')) {
         $settings->add(new admin_setting_heading('enrol_phpldapcohort_noextension', '', get_string('phpldap_noextension', 'enrol_ldapcohort')));
     } else {
+        require_once($CFG->dirroot.'/enrol/ldap/settingslib.php');
         require_once($CFG->libdir.'/ldaplib.php');
         require_once(dirname(__FILE__).'/lib.php');
+        
 
         $yesno = array(get_string('no'), get_string('yes'));
         
