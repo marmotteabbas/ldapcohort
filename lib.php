@@ -272,7 +272,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 		
         $textlib = textlib_get_instance();
         $user = new stdClass();
-        $user->username = trim(moodle_strtolower($ldap_user['uid'][0]));
+        $user->username = trim(textlib::strtolower($ldap_user['uid'][0]));
         
         $values = array (
             'givenname'         => 'firstname',
