@@ -17,6 +17,72 @@ class enrol_ldapcohort_plugin extends enrol_plugin
      * @var array
      */
     private $_cohorts = array();
+    /**
+     * Constructor for the plugin. In addition to calling the parent
+     * constructor, we define and 'fix' some settings depending on the
+     * real settings the admin defined.
+     */
+    public function __construct() {
+        global $CFG;
+        require_once($CFG->libdir.'/ldaplib.php');
+
+        // Do our own stuff to fix the config (it's easier to do it
+        // here than using the admin settings infrastructure). We
+        // don't call $this->set_config() for any of the 'fixups'
+        // (except the objectclass, as it's critical) because the user
+        // didn't specify any values and relied on the default values
+        // defined for the user type she chose.
+        $this->load_config();
+
+        // Make sure we get sane defaults for critical values.
+        $this->config->ldapencoding = $this->get_config('ldapencoding', 'utf-8');
+        $this->config->user_type = $this->get_config('user_type', 'default');
+
+        $ldap_usertypes = ldap_supported_usertypes();
+        $this->config->user_type_name = $ldap_usertypes[$this->config->user_type];
+        unset($ldap_usertypes);
+
+        $default = ldap_getdefaults();
+        // Remove the objectclass default, as the values specified there are for
+        // users, and we are dealing with groups here.
+        unset($default['objectclass']);
+
+        // Use defaults if values not given. Dont use this->get_config()
+        // here to be able to check for 0 and false values too.
+        foreach ($default as $key => $value) {
+            // Watch out - 0, false are correct values too, so we can't use $this->get_config()
+            if (!isset($this->config->{$key}) or $this->config->{$key} == '') {
+                $this->config->{$key} = $value[$this->config->user_type];
+            }
+        }
+
+        if (empty($this->config->objectclass)) {
+            // Can't send empty filter. Fix it for now and future occasions
+            $this->set_config('objectclass', '(objectClass=*)');
+        } else if (stripos($this->config->objectclass, 'objectClass=') === 0) {
+            // Value is 'objectClass=some-string-here', so just add ()
+            // around the value (filter _must_ have them).
+            // Fix it for now and future occasions
+            $this->set_config('objectclass', '('.$this->config->objectclass.')');
+        } else if (stripos($this->config->objectclass, '(') !== 0) {
+            // Value is 'some-string-not-starting-with-left-parentheses',
+            // which is assumed to be the objectClass matching value.
+            // So build a valid filter with it.
+            $this->set_config('objectclass', '(objectClass='.$this->config->objectclass.')');
+        } else {
+            // There is an additional possible value
+            // '(some-string-here)', that can be used to specify any
+            // valid filter string, to select subsets of users based
+            // on any criteria. For example, we could select the users
+            // whose objectClass is 'user' and have the
+            // 'enabledMoodleUser' attribute, with something like:
+            //
+            //   (&(objectClass=user)(enabledMoodleUser=1))
+            //
+            // In this particular case we don't need to do anything,
+            // so leave $this->config->objectclass as is.
+        }
+    }
 
     /**
      * Connect to the LDAP server, using the plugin configured
