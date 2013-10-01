@@ -265,7 +265,11 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 		                        $moodle_cohort = $DB->get_record('cohort', array ('id' => $cohortid));
 		                        $trace->output(get_string('cohort_created', 'enrol_ldapcohort', $moodle_cohort->name));
 		                        $this->_cohorts_added++;
-		                    }
+		                    }else {
+								if ($this->config->debug_mode){
+									$trace->output("No create cohorte: ".$cohortname."\n");
+								}
+								continue;
 		                }    
 	                } else {
 	                    if (strpos($moodle_cohort->description, '<strong>[LDAP Cohort Sync]</strong>') === false) {
@@ -290,7 +294,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 	        }    
         }
         $trace->output(get_string('synchronized_cohorts', 'enrol_ldapcohort', $this->_cohorts_added + $this->_cohorts_existing));
-        @$this->ldap_close();
+        $this->ldap_close();
         $trace->finished();
     }
 	public function sync_user_enrolments($user) {
@@ -311,8 +315,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 		}
 	}
 
-    public function sync_users($moodle_cohort, $uid_in = array())
-    {
+    public function sync_users($moodle_cohort, $uid_in = array()){
         if (empty($uid_in)) {
             continue;
         }
