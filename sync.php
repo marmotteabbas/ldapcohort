@@ -1,41 +1,22 @@
 <?php
+define('CLI_SCRIPT', true);
 
-defined('MOODLE_INTERNAL') || die();
+require(__DIR__.'/../../../config.php');
+require_once("$CFG->libdir/clilib.php");
 
-if (ob_get_level() == 0) ob_start();
+// Ensure errors are well explained.
+$CFG->debug = DEBUG_DEVELOPER;
 
-if ($ADMIN->fulltree) {
-    
-    $plugin = enrol_get_plugin('ldapcohort');
-    
-    if (class_exists('enrol_ldapcohort_plugin') && $plugin instanceof enrol_ldapcohort_plugin) { //ok
-        
-        if (check_browser_version('MSIE')) {
-            //ugly IE hack to work around downloading instead of viewing
-            @header('Content-Type: text/html; charset=utf-8');
-            echo "<xmp>"; //<pre> is not good enough for us here
-        } else {
-            //send proper plaintext header
-            @header('Content-Type: text/plain; charset=utf-8');
-        }
-        set_time_limit(0);
-        /// increase memory limit
-        raise_memory_limit(MEMORY_EXTRA);
-        
-        echo str_pad('',4096)."\n";
-        
-        ob_flush();
-        flush();
-        
-        $plugin->cron(false);
-        
-        // finish the IE hack
-        if (check_browser_version('MSIE')) {
-            echo "</xmp>";
-        }
-        exit();
-    }
-    
+if (!enrol_is_enabled('ldapcohort')) {
+    cli_error(get_string('pluginnotenabled', 'enrol_ldap'), 2);
 }
 
-exit();
+/** @var enrol_ldap_plugin $enrol */
+$enrol = enrol_get_plugin('ldapcohort');
+
+$trace = new text_progress_trace();
+
+// Update enrolments -- these handlers should autocreate courses if required.
+$enrol->cron(false,$trace);
+
+exit(0);
