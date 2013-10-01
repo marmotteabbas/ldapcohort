@@ -289,7 +289,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 	
 	                if (!empty($cohort[$this->config->cohort_member_attribute])) {
 						$membership = array($cohort[$this->config->cohort_member_attribute]);
-						$this->sync_users($moodle_cohort, $membership);
+						$this->sync_users($moodle_cohort, $membership,$trace);
 	                }
 	            }
 	        }    
@@ -316,7 +316,8 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 		}
 	}
 
-    public function sync_users($moodle_cohort, $uid_in = array()){
+    public function sync_users($moodle_cohort, $uid_in = array(),progress_trace $trace){
+        
         if (empty($uid_in)) {
             continue;
         }
