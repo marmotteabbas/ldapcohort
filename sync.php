@@ -6,9 +6,9 @@ if (ob_get_level() == 0) ob_start();
 
 if ($ADMIN->fulltree) {
     
-    $plugin = enrol_get_plugin('ldapcohorts');
+    $plugin = enrol_get_plugin('ldapcohort');
     
-    if (class_exists('enrol_ldapcohorts_plugin') && $plugin instanceof enrol_ldapcohorts_plugin) { //ok
+    if (class_exists('enrol_ldapcohort_plugin') && $plugin instanceof enrol_ldapcohort_plugin) { //ok
         
         if (check_browser_version('MSIE')) {
             //ugly IE hack to work around downloading instead of viewing
