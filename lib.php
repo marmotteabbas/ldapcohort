@@ -146,8 +146,17 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 
         return $_enabled == 1 ? true : false;
     }
-	protected function search_ldap($contexts,$filter,$wanted_fields,$search_sub){
-	
+
+
+    protected function search_ldap($contexts,$filter,$wanted_fields,$search_sub){
+	if (!$this->ldap_connect()) {
+            return;
+        }
+        $ldap_pagedresults = ldap_paged_results_supported($this->get_config('ldap_version'));
+	$ldapconnection = $this->ldapconnection;
+
+
+
 	$ldap_cookie = '';
         foreach ($contexts as $context) {
             $context = trim($context);
@@ -183,10 +192,10 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 				}
 
 				// Check and push results
-				$resultss = ldap_get_entries($this->ldapconnection, $ldap_result);
+				$results = ldap_get_entries($this->ldapconnection, $ldap_result);
 
 				// LDAP libraries return an odd array, really. fix it:
-				for ($c = 0; $c < $records['count']; $c++) {
+				for ($c = 0; $c < $results['count']; $c++) {
 					array_push($flat_results, $results[$c]);
 				}
 				// Free some mem
@@ -197,27 +206,21 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 			// closed and a new one created, to work without paged results from here on.
 			if ($ldap_pagedresults) {
 				$this->ldap_close();
-				$this->ldap_connect($trace);
+				$this->ldap_connect();
 			}
-	return $flat_results;
 	}
+	$this->ldap_close();
+        return $flat_results;
+    }
     public function sync_cohorts(progress_trace $trace){
         global $CFG, $DB;
 
         require_once("{$CFG->dirroot}/cohort/lib.php");
-        if (!$this->ldap_connect($trace)) {
-            $trace->finished();
-            return;
-        }
-        $ldap_pagedresults = ldap_paged_results_supported($this->get_config('ldap_version'));
-
         // we may need a lot of memory here
         @set_time_limit(0);
         raise_memory_limit(MEMORY_HUGE);
 
         $trace->output(get_string('connectingldap', 'enrol_ldapcohort'));
-		$ldapconnection = $this->ldapconnection;
-
         $trace->output(get_string('synchronizing_cohorts', 'enrol_ldapcohort'));
 
         $wanted_fields = array();
@@ -245,9 +248,9 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 
         $filter = '(&('.$this->config->cohort_name.'=*)'.$this->config->cohort_objectclass.')';
         
-		$flat_results=$this->search_ldap($contexts,$filter,$wanted_fields,$this->config->cohort_search_sub);
+	$flat_results=$this->search_ldap($contexts,$filter,$wanted_fields,$this->config->cohort_search_sub);
 		
-			if (count($flat_results)) {
+	if (count($flat_results)) {
 	            foreach ($flat_results as $ldapgroup) {
 	                $ldapgroup = array_change_key_case($ldapgroup, CASE_LOWER);
 
@@ -294,17 +297,15 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 
 	                if (!empty($ldapgroup[$this->config->cohort_member_attribute])) {
 						if ($this->config->debug_mode){
-									$trace->output("memenberslist : ".var_dump(ldapgroup[$this->config->cohort_member_attribute]));
+									$trace->output("memberslist : ".var_dump($ldapgroup[$this->config->cohort_member_attribute]));
 								}
-						$membership = array($ldapgroup[$this->config->cohort_member_attribute]);
+						$membership = $ldapgroup[$this->config->cohort_member_attribute];
 						$this->sync_users($moodle_cohort, $membership,$trace);
 	                }
 	            }
 	        }
-        }
         $trace->output(get_string('synchronized_cohorts', 'enrol_ldapcohort', $this->_cohorts_added + $this->_cohorts_existing));
-        $this->ldap_close();
-        $trace->finished();
+       $trace->finished();
     }
 	function get_cohort_members($cohortid) {
         global $DB;
@@ -375,6 +376,9 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 	}
 
     public function sync_users($moodle_cohort, $uid_in = array(),progress_trace $trace){
+	if (!$this->ldap_connect()) {
+            return;
+        }
 
         if (empty($uid_in)) {
             continue;
