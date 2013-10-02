@@ -216,6 +216,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
         global $CFG, $DB;
 
         require_once("{$CFG->dirroot}/cohort/lib.php");
+         require_once("{$CFG->dirroot}/user/lib.php");
         // we may need a lot of memory here
         @set_time_limit(0);
         raise_memory_limit(MEMORY_HUGE);
@@ -236,7 +237,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
             array_push($wanted_fields, $this->config->cohort_description);
         }
 
-        if (empty($this->config->user_member_attribute)) {
+        if (empty($this->config->cohort_member_attribute)) {
             $trace->output(get_string('err_member_attribute', 'enrol_ldapcohort'));
             return;
         }
@@ -388,42 +389,42 @@ class enrol_ldapcohort_plugin extends enrol_plugin
         $ldapconnection = $this->ldapconnection;
 
         $count = 0;
+        $wanted_fields = array();
+        if (!empty($this->config->user_attribute)) {
+            array_push($wanted_fields, $this->config->user_attribute);
+        }
+
+        if (!empty($this->config->user_idnumber)) {
+            array_push($wanted_fields, $this->config->user_idnumber);
+        }
+
+        if (!empty($this->config->user_member_attribute)) {
+            array_push($wanted_fields, $this->config->user_member_attribute);
+        }
+
+        if (empty($this->config->user_member_attribute)) {
+            $trace->output(get_string('err_member_attribute', 'enrol_ldapcohort'));
+            return;
+        }
+
         //contexts for searching cohorts
         $contexts = explode(';', $this->config->user_contexts);
         $user_filter = '(&('.$this->config->user_attribute.'=*)(|';
         foreach ($uid_in as $uid) {
-            $user_filter .= '(' . $this->config->user_member_attribute . '=' . $uid . ')';
+		$pos=strpos($uid,",");
+		if ($pos === false) {
+			$user_filter .= '(' . $this->config->user_member_attribute . '=' . $uid . ')';
+		}else{
+			$uid=explode(",",$uid);
+			$user_filter .= '(' .  $uid[0] . ')';
+
+		}
         }
         $user_filter .= ')'.$this->config->user_objectclass.')';
+	$ldap_users=$this->search_ldap($contexts,$user_filter,$wanted_fields,$this->config->user_search_sub);
 
-        foreach ($contexts as $context) {
-            $context = trim($context);
-            if (empty($context)) {
-                continue;
-            }
-
-            if ($this->config->user_search_sub) {
-                //use ldap_search to find first user from subtree
-                $ldap_result = ldap_search($ldapconnection, $context,
-                                           $user_filter);
-            } else {
-                //search only in this context
-                $ldap_result = ldap_list($ldapconnection, $context,
-                                         $user_filter);
-            }
-
-            if (!$ldap_result) {
-                continue;
-            }
-
-            $records = ldap_get_entries($ldapconnection, $ldap_result);
-
-            $ldap_users = array();
-            for ($i = 0; $i < $records['count']; $i++) {
-                $ldap_users []= $records[$i];
-            }
-
-            foreach ($ldap_users as $i => $ldap_user) {
+	if (count($ldap_users)) {
+	     	foreach ($ldap_users as $i => $ldap_user) {
 				$ldap_user = array_change_key_case($ldap_user, CASE_LOWER);
 
                 if (empty($ldap_user['uid'][0])) {
@@ -432,13 +433,18 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                 }
 
                 $moodle_user = $DB->get_record( 'user', array ( 'username' => $ldap_user['uid'][0] ) );
-				if (empty($moodle_user)) {
+		if (empty($moodle_user)) {
 	                if ($this->config->autocreate_users) {
 	                    if (false != ($userid = $this->create_user($ldap_user))) {
 	                        $moodle_user = $DB->get_record( 'user', array ('id' => $userid) );
 	                        $this->_users_added++;
 	                    }
-	                }
+			}else{
+			    if ($this->config->debug_mode){
+				$trace->output("No create user: ".$ldap_user['uid'][0]."  ".$ldap_user['cn'][0]);
+			    }
+			    continue;
+			}
                 } else {
                     $this->_users_existing++;
                 }
@@ -484,10 +490,9 @@ class enrol_ldapcohort_plugin extends enrol_plugin
     public function create_user($ldap_user)
     {
         global $CFG, $DB;
-
-        $textlib = textlib_get_instance();
-        $user = new stdClass();
-        $user->username = trim(textlib::strtolower($ldap_user['uid'][0]));
+	$textlib =new textlib();
+	$user = new stdClass();
+	$user->username = trim(textlib::strtolower($ldap_user['uid'][0]));
 
         $values = array (
             'givenname'         => 'firstname',
@@ -518,25 +523,11 @@ class enrol_ldapcohort_plugin extends enrol_plugin
         $user->confirmed  = 1;
         $user->auth       = $this->authtype;
         $user->mnethostid = $CFG->mnet_localhost_id;
-		$_s = strtolower(trim($user->suspended));
-		if ($_s == 'false') {
-			$_s = 0;
-		} elseif ($_s == 'true') {
-			$_s = 1;
-		}
-		$user->suspended = intval($_s);
-
         if (empty($user->lang)) {
             $user->lang = $CFG->lang;
         }
-		try {
-			$id = $DB->insert_record('user', $user);
-		} catch (Exception $e) {
-			$trace->output("\n\t Error creating user: " . $e->getMessage());
-		}
-        $trace->output("\n\t" . get_string('user_dbinsert', 'enrol_ldapcohort', array('name'=>$user->username, 'id'=>$id)));
 
-        return $id;
+        return user_create_user($user);
     }
 
     public function create_cohort($ldap_entry)
