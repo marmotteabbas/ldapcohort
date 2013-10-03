@@ -148,7 +148,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
     }
 
 
-    protected function search_ldap($contexts,$filter,$wanted_fields,$search_sub){
+    protected function ldap_search($contexts,$filter,$wanted_fields,$search_sub){
 	if (!$this->ldap_connect()) {
             return;
         }
@@ -212,11 +212,37 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 	$this->ldap_close();
         return $flat_results;
     }
+    
+    
+    
+    
     public function sync_cohorts(progress_trace $trace){
         global $CFG, $DB;
 
         require_once("{$CFG->dirroot}/cohort/lib.php");
-         require_once("{$CFG->dirroot}/user/lib.php");
+        require_once("{$CFG->dirroot}/user/lib.php");
+        
+        /*
+        if ($this->config->autocreate_cohorts) {
+		}else{
+		}
+	        $listcohorts=cohort_get_cohorts(context_system::instance()->id)['cohorts'];
+			if ($CFG->debug_ldap_groupes){
+			pp_print_object('list of cohorts ',$listcohorts);
+			}
+			foreach ($listcohorts as $cohortid=>$cohort) {
+			$groupname=$cohort->idnumber;
+			print "syncyng group " . $groupname .PHP_EOL;
+		    	if (!empty ($groupname)&& ($groupname!=null)&&($groupname!="")){  
+			    $ldap_members = $this->ldap_get_group_members($groupname);
+			    if (count($ldap_members)==0) {
+		            print "not updating empty LDAP group " . $cohort->name .PHP_EOL;
+				}else{
+				    $this->ldap_update_cohort_group_members($ldap_members,$cohortid);
+				}
+			}
+		}
+		*/
         // we may need a lot of memory here
         @set_time_limit(0);
         raise_memory_limit(MEMORY_HUGE);
@@ -249,7 +275,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 
         $filter = '(&('.$this->config->cohort_name.'=*)'.$this->config->cohort_objectclass.')';
         
-	$flat_results=$this->search_ldap($contexts,$filter,$wanted_fields,$this->config->cohort_search_sub);
+	$flat_results=$this->ldap_search($contexts,$filter,$wanted_fields,$this->config->cohort_search_sub);
 		
 	if (count($flat_results)) {
 	            foreach ($flat_results as $ldapgroup) {
@@ -267,48 +293,53 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 
 	                $ldapgroupname = strtoupper($ldapgroup[$this->config->cohort_name][0]);
 
-	                $moodle_cohort = $DB->get_record('cohort', array ( $this->config->cohort_syncing_field => $ldapgroupname ));
-	                if (empty($moodle_cohort)) {
-						if ($this->config->autocreate_cohorts) {
-		                    if (false != ($cohortid = $this->create_cohort($ldapgroup))) {
-		                        $moodle_cohort = $DB->get_record('cohort', array ('id' => $cohortid));
-		                        $trace->output(get_string('cohort_created', 'enrol_ldapcohort', $moodle_cohort->name));
-		                        $this->_cohorts_added++;
-		                    }
-		                } else{
-						if ($this->config->debug_mode){
-									$trace->output("No create cohorte: ".$ldapgroupname);
-								}
-						continue;
-						}
-	                } else {
-	                    if (strpos($moodle_cohort->description, '<strong>[LDAP Cohort Sync]</strong>') === false) {
-	                        $moodle_cohort->description = '<strong>[LDAP Cohort Sync]</strong> ' . $moodle_cohort->description;
-	                        $DB->update_record('cohort', $moodle_cohort);
-	                    }
-	                    $this->_cohorts_existing++;
-	                    $trace->output(get_string('cohort_existing', 'enrol_ldapcohort', $moodle_cohort->name));
-	                }
-
-	                if (empty($moodle_cohort->id)) {
-	                    $trace->output(get_string('err_create_cohort', 'enrol_ldapcohort', $ldapgroupname));
-	                    continue;
-	                }
+	                $moodle_cohort=search_cohort($ldapgroupname,$trace);
 	                //$this->_cohorts[$moodle_cohort->idnumber] = $moodle_cohort;
 
 	                if (!empty($ldapgroup[$this->config->cohort_member_attribute])) {
-						if ($this->config->debug_mode){
-									$trace->output("memberslist : ".var_dump($ldapgroup[$this->config->cohort_member_attribute]));
-								}
 						$membership = $ldapgroup[$this->config->cohort_member_attribute];
 						$this->sync_users($moodle_cohort, $membership,$trace);
+						$this->stamp_cohort($moodle_cohort);
 	                }
 	            }
 	        }
         $trace->output(get_string('synchronized_cohorts', 'enrol_ldapcohort', $this->_cohorts_added + $this->_cohorts_existing));
        $trace->finished();
     }
-	function get_cohort_members($cohortid) {
+	private function search_cohort($ldapgroupname,$trace){
+		global $CFG, $DB;
+		
+		
+		$moodle_cohort = $DB->get_record('cohort', array ( $this->config->cohort_syncing_field => $ldapgroupname ));
+		if (empty($moodle_cohort)) {
+			if ($this->config->autocreate_cohorts) {
+				if (false != ($cohortid = $this->create_cohort($ldapgroup))) {
+					$moodle_cohort = $DB->get_record('cohort', array ('id' => $cohortid));
+					$trace->output(get_string('cohort_created', 'enrol_ldapcohort', $moodle_cohort->name));
+					$this->_cohorts_added++;
+				}
+			} else{
+			if ($this->config->debug_mode){
+						$trace->output("No create cohorte: ".$ldapgroupname);
+					}
+			continue;
+			}
+		} else {
+			
+			$this->_cohorts_existing++;
+			$trace->output(get_string('cohort_existing', 'enrol_ldapcohort', $moodle_cohort->name));
+		}
+
+		if (empty($moodle_cohort->id)) {
+			$trace->output(get_string('err_create_cohort', 'enrol_ldapcohort', $ldapgroupname));
+			continue;
+		}
+	
+	
+	
+	
+	}
+	private function get_cohort_members($cohortid) {
         global $DB;
         $sql = " SELECT u.id,u.username
                           FROM {user} u
@@ -359,7 +390,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 
 	}
 	public function sync_user_enrolments($user) {
-        global $DB;
+        
 		if ($this->config->login_sync) {
 	        // Do not try to print anything to the output because this method is called during interactive login.
 	        $trace = new error_log_progress_trace($this->errorlogtag);
@@ -367,15 +398,61 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 	            $trace->finished();
 	            return;
 	        }
+			global $CFG, $DB;
+	        $ldapconnection = $this->ldapconnection;
+	
+	       
+	        $wanted_fields = "";//all
+	        
+	        //contexts for searching cohorts
+	        $contexts = explode(';', $this->config->user_contexts);
+	        $user_filter = '(&('.$this->config->user_attribute.'=*)(|';
+	        $user_filter .= '(' . $this->config->user_member_attribute . '=' . $user->username . ')';
+	        $user_filter .= ')'.$this->config->user_objectclass.')';
+			$ldap_user=$this->ldap_search($contexts,$user_filter,$wanted_fields,$this->config->user_search_sub);
+	
+			if (count($ldap_users)) {
+	     	
+				$ldap_user = array_change_key_case($ldap_user, CASE_LOWER);
 
-
-
+                if (empty($ldap_user['uid'][0])) {
+                    $trace->output("\t" . get_string('err_user_empty_uid', 'enrol_ldapcohort', $ldap_user['cn'][0]));
+										                    continue;
+                }
+				if (!empty($ldap_user[$this->config->user_member_attribute])) {
+					$memberof = $ldap_user[$this->config->user_member_attribute];
+					foreach ($menberof as $$ldapgroupname){
+						$pos=strpos($ldapgroupname,"=");
+						if ($pos !== false) {
+							$ldapgroupname=explode("=",$ldapgroupname);
+							$ldapgroupname= $ldapgroupname[1];
+				
+						}
+						$moodle_cohort=search_cohort($ldapgroup,$trace);
+                		try {
+							cohort_add_member($moodle_cohort->id, $user->id);
+		                } catch (Exception $e) {
+		                    $trace->output("\t" . get_string('err_user_exists_in_cohort', 'enrol_ldapcohort', array ('cohort' => $moodle_cohort->name, 'user' => $ldap_user['uid'][0])));
+						}
+						$this->stamp_cohort($moodle_cohort);
+						
+					}
+	            }
+            }    
 	        $this->ldap_close();
 
 	        $trace->finished();
 		}
 	}
-
+	
+	private function stamp_cohort($cohort){
+	if (strpos($cohort->description, '<strong>[LDAP Cohort Sync]</strong>') === false) {
+							$cohort->description = '<strong>[LDAP Cohort Sync]</strong> ' . date("d/m/Y H:i:s").substr($cohort->description,55); //ajouter la date
+							$DB->update_record('cohort', $cohort);
+						}
+	
+	}
+	
     public function sync_users($moodle_cohort, $uid_in = array(),progress_trace $trace){
 	if (!$this->ldap_connect()) {
             return;
@@ -389,24 +466,8 @@ class enrol_ldapcohort_plugin extends enrol_plugin
         $ldapconnection = $this->ldapconnection;
 
         $count = 0;
-        $wanted_fields = array();
-        if (!empty($this->config->user_attribute)) {
-            array_push($wanted_fields, $this->config->user_attribute);
-        }
-
-        if (!empty($this->config->user_idnumber)) {
-            array_push($wanted_fields, $this->config->user_idnumber);
-        }
-
-        if (!empty($this->config->user_member_attribute)) {
-            array_push($wanted_fields, $this->config->user_member_attribute);
-        }
-
-        if (empty($this->config->user_member_attribute)) {
-            $trace->output(get_string('err_member_attribute', 'enrol_ldapcohort'));
-            return;
-        }
-
+        $wanted_fields = "";//all
+        
         //contexts for searching cohorts
         $contexts = explode(';', $this->config->user_contexts);
         $user_filter = '(&('.$this->config->user_attribute.'=*)(|';
@@ -421,7 +482,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 		}
         }
         $user_filter .= ')'.$this->config->user_objectclass.')';
-	$ldap_users=$this->search_ldap($contexts,$user_filter,$wanted_fields,$this->config->user_search_sub);
+	$ldap_users=$this->ldap_search($contexts,$user_filter,$wanted_fields,$this->config->user_search_sub);
 
 	if (count($ldap_users)) {
 	     	foreach ($ldap_users as $i => $ldap_user) {
@@ -433,7 +494,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                 }
 
                 $moodle_user = $DB->get_record( 'user', array ( 'username' => $ldap_user['uid'][0] ) );
-		if (empty($moodle_user)) {
+			if (empty($moodle_user)) {
 	                if ($this->config->autocreate_users) {
 	                    if (false != ($userid = $this->create_user($ldap_user))) {
 	                        $moodle_user = $DB->get_record( 'user', array ('id' => $userid) );
@@ -487,7 +548,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
         return ldap_find_userdn($this->ldapconnection, $userid, $contexts,$user_filter,
                                 $this->get_config('idnumber_attribute'), $this->get_config('user_search_sub'));
     }
-    public function create_user($ldap_user)
+    private function create_user($ldap_user)
     {
         global $CFG, $DB;
 	$textlib =new textlib();
@@ -530,7 +591,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
         return user_create_user($user);
     }
 
-    public function create_cohort($ldap_entry)
+    private function create_cohort($ldap_entry)
     {
         $cohort = new stdClass();
 
@@ -552,7 +613,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 
     public function cron(){
         $this->load_config();
-        $trace = new error_log_progress_trace($this->errorlogtag);
+        $trace = new text_progress_trace($this->errorlogtag);
         $this->sync_cohorts($trace);
 
 
