@@ -291,7 +291,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 																continue;
 					}
 
-					$ldapgroupname = strtoupper($ldapgroup[ $this->config->{'cohort_'.$this->config->cohort_syncing_field}][0]);
+					$ldapgroupname = $ldapgroup[ $this->config->{'cohort_'.$this->config->cohort_syncing_field}][0];
                     $trace->output("ldapgroupname ".$ldapgroupname);
 					$moodle_cohort=$this->search_cohort($ldapgroupname,$trace);
 					//$this->_cohorts[$moodle_cohort->idnumber] = $moodle_cohort;
@@ -464,7 +464,8 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 	public function sync_users($moodle_cohort, $uid_in = array(),progress_trace $trace){
 
         $cohort_members=$this->get_cohort_members($moodle_cohort->id);
-
+$trace->output('cohort_members '. var_dump($chort_members));
+		
         if (!$this->ldap_connect()) {
 			return;
 		}
