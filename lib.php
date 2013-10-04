@@ -450,6 +450,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 	}
 
 	private function stamp_cohort($cohort){
+		global $DB;
         if (strpos($cohort->description, '<strong>[LDAP Cohort Sync]</strong>') === false) {
             $cohort->description = '<strong>[LDAP Cohort Sync]</strong> ' . date("d/m/Y H:i:s").$cohort->description; 
             $DB->update_record('cohort', $cohort);
