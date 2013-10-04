@@ -17,9 +17,9 @@ $enrol = enrol_get_plugin('ldapcohort');
 $trace = new text_progress_trace();
 
 // Update enrolments -- these handlers should autocreate cohortes if required.
-echo "-----------------------------\n";
+
         $enrol->sync_cohorts($trace);
 
-echo "-----------------------------\n";
+
 
 exit(0);

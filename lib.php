@@ -501,7 +501,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 				$ldap_user = array_change_key_case($ldap_user, CASE_LOWER);
 
 				if (empty($ldap_user['uid'][0])) {
-					$trace->output("\t" . get_string('err_user_empty_uid', 'enrol_ldapcohort', $ldap_user['cn'][0]));
+					if ($this->config->debug_mode){$trace->output("\t" . get_string('err_user_empty_uid', 'enrol_ldapcohort', $ldap_user['cn'][0]));}
 															continue;
 				}
 
@@ -513,9 +513,6 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 							$this->_users_added++;
 						}
                     }else{
-                        if ($this->config->debug_mode){
-                        $trace->output("No create user: ".$ldap_user['uid'][0]."  ".$ldap_user['cn'][0]);
-                        }
                         continue;
                     }
 				} else {
@@ -526,14 +523,14 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 				}
 
 				if (empty($moodle_user->id)) {
-					$trace->output("\t" . get_string('err_create_user', 'enrol_ldapcohort', $ldap_user['uid'][0]));
+					if ($this->config->debug_mode){$trace->output("\t" . get_string('err_create_user', 'enrol_ldapcohort', $ldap_user['uid'][0]));}
 															continue;
 				}
 
 				try {
 					cohort_add_member($moodle_cohort->id, $moodle_user->id);
 				} catch (Exception $e) {
-					$trace->output("\t" . get_string('err_user_exists_in_cohort', 'enrol_ldapcohort', array ('cohort' => $moodle_cohort->name, 'user' => $ldap_user['uid'][0])));
+					if ($this->config->debug_mode){$trace->output("\t" . get_string('err_user_exists_in_cohort', 'enrol_ldapcohort', array ('cohort' => $moodle_cohort->name, 'user' => $ldap_user['uid'][0])));}
 														}
 				$count++;
 			}
@@ -617,7 +614,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 		$cohort->name           = isset ($ldap_entry[$this->config->cohort_name][0]) ? $ldap_entry[$this->config->cohort_name][0] : '';
 		$cohort->description    = isset ($ldap_entry[$this->config->cohort_description][0]) ? $ldap_entry[$this->config->cohort_description][0] : '';
 
-		$cohort->description    = '<strong>[LDAP Cohort Sync]</strong> ' . $cohort->description;
+		$cohort->description    = '<strong>[LDAP Cohort Sync]</strong> ' . date("d/m/Y H:i:s"). $cohort->description;
 
 		$cohort->contextid      = $this->config->context;
 
