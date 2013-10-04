@@ -541,7 +541,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 	        cohort_remove_member($cohortid, $userid);
 	            
 	        }
-	    }
+	    
         $trace->output(get_string('user_synchronized', 'enrol_ldapcohort', array('count' => $count, 'cohort' => $moodle_cohort->name)));
 	}
 
