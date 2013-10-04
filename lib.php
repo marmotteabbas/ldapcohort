@@ -454,7 +454,8 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 	}
 
 	private function stamp_cohort($cohort){
-	if (strpos($cohort->description, '<strong>[LDAP Cohort Sync]</strong>') === false) {
+	global $DB;
+		if (strpos($cohort->description, '<strong>[LDAP Cohort Sync]</strong>') === false) {
 							$cohort->description = '<strong>[LDAP Cohort Sync]</strong> ' . date("d/m/Y H:i:s").substr($cohort->description,55); //ajouter la date
 							$DB->update_record('cohort', $cohort);
 						}
@@ -538,10 +539,10 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 			}
 		}
         foreach ($cohort_members as $userid => $user) {
-	        cohort_remove_member($cohortid, $userid);
+	        cohort_remove_member($moodle_cohort->id, $userid);
 	            
 	        }
-	    }
+	
         $trace->output(get_string('user_synchronized', 'enrol_ldapcohort', array('count' => $count, 'cohort' => $moodle_cohort->name)));
 	}
 
