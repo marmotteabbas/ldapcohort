@@ -264,7 +264,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 		}
 
 		if (empty($this->config->cohort_member_attribute)) {
-			$trace->output(get_string('err_member_attribute', 'enrol_ldapcohort'));
+			if ($this->config->debug_mode){$trace->output(get_string('err_member_attribute', 'enrol_ldapcohort'));}
 			return;
 		}
 
@@ -282,12 +282,12 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 					$ldapgroup = array_change_key_case($ldapgroup, CASE_LOWER);
 
 					if (empty($ldapgroup[$this->config->cohort_name][0])) {
-						$trace->output(get_string('err_invalid_cohort_name', 'enrol_ldapcohort', $this->config->cohort_name));
+						if ($this->config->debug_mode){$trace->output(get_string('err_invalid_cohort_name', 'enrol_ldapcohort', $this->config->cohort_name));}
 																continue;
 					}
 
 					if (empty($ldapgroup[$this->config->cohort_idnumber][0])) {
-						$trace->output(get_string('err_invalid_cohort_idnumber', 'enrol_ldapcohort', $this->config->cohort_idnumber));
+						if ($this->config->debug_mode){$trace->output(get_string('err_invalid_cohort_idnumber', 'enrol_ldapcohort', $this->config->cohort_idnumber));}
 																continue;
 					}
 
@@ -295,7 +295,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                     $moodle_cohort=$this->search_cohort($ldapgroupname,$trace);
 					//$this->_cohorts[$moodle_cohort->idnumber] = $moodle_cohort;
 			if (!$moodle_cohort){
-				$trace->output(get_string('err_create_cohort', 'enrol_ldapcohort', $ldapgroupname));
+				if ($this->config->debug_mode){$trace->output(get_string('err_create_cohort', 'enrol_ldapcohort', $ldapgroupname));}
 				continue;
 			}
 					if (!empty($ldapgroup[$this->config->cohort_member_attribute])) {
@@ -330,7 +330,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 		}
 
 		if (empty($moodle_cohort->id)) {
-			$trace->output(get_string('err_create_cohort', 'enrol_ldapcohort', $ldapgroupname));
+			if ($this->config->debug_mode){$trace->output(get_string('err_create_cohort', 'enrol_ldapcohort', $ldapgroupname));}
 			return false;
 		}
 		return $moodle_cohort;
@@ -429,14 +429,14 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 						}
 						$moodle_cohort=$this->search_cohort($ldapgroup,$trace);
 						if (!$moodle_cohort){
-							$trace->output(get_string('err_create_cohort', 'enrol_ldapcohort', $ldapgroupname));
+							if ($this->config->debug_mode){$trace->output(get_string('err_create_cohort', 'enrol_ldapcohort', $ldapgroupname));}
 							continue;
 						}
 
 						try {
 							cohort_add_member($moodle_cohort->id, $user->id);
 						} catch (Exception $e) {
-							$trace->output("\t" . get_string('err_user_exists_in_cohort', 'enrol_ldapcohort', array ('cohort' => $moodle_cohort->name, 'user' => $ldap_user['uid'][0])));
+							if ($this->config->debug_mode){$trace->output("\t" . get_string('err_user_exists_in_cohort', 'enrol_ldapcohort', array ('cohort' => $moodle_cohort->name, 'user' => $ldap_user['uid'][0])));}
 						}
 						$this->stamp_cohort($moodle_cohort);
 
