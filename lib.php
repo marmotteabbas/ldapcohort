@@ -292,8 +292,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 					}
 
 					$ldapgroupname = $ldapgroup[ $this->config->{'cohort_'.$this->config->cohort_syncing_field}][0];
-                    $trace->output("ldapgroupname ".$ldapgroupname);
-					$moodle_cohort=$this->search_cohort($ldapgroupname,$trace);
+                    $moodle_cohort=$this->search_cohort($ldapgroupname,$trace);
 					//$this->_cohorts[$moodle_cohort->idnumber] = $moodle_cohort;
 			if (!$moodle_cohort){
 				$trace->output(get_string('err_create_cohort', 'enrol_ldapcohort', $ldapgroupname));
@@ -322,10 +321,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 					$this->_cohorts_added++;
 				}
 			} else{
-			if ($this->config->debug_mode){
-						$trace->output("No create cohorte: ".$ldapgroupname);
-					}
-			return false;
+				return false;
 			}
 		} else {
 
@@ -454,10 +450,14 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 	}
 
 	private function stamp_cohort($cohort){
-	if (strpos($cohort->description, '<strong>[LDAP Cohort Sync]</strong>') === false) {
-							$cohort->description = '<strong>[LDAP Cohort Sync]</strong> ' . date("d/m/Y H:i:s").substr($cohort->description,55); //ajouter la date
-							$DB->update_record('cohort', $cohort);
-						}
+        if (strpos($cohort->description, '<strong>[LDAP Cohort Sync]</strong>') === false) {
+            $cohort->description = '<strong>[LDAP Cohort Sync]</strong> ' . date("d/m/Y H:i:s").$cohort->description; 
+            $DB->update_record('cohort', $cohort);
+        }else{
+            $cohort->description = '<strong>[LDAP Cohort Sync]</strong> ' . date("d/m/Y H:i:s").substr($cohort->description,55); 
+            $DB->update_record('cohort', $cohort);
+        }
+
 
 	}
 
