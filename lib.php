@@ -464,7 +464,6 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 	public function sync_users($moodle_cohort, $uid_in = array(),progress_trace $trace){
 
         $cohort_members=$this->get_cohort_members($moodle_cohort->id);
-$trace->output('cohort_members '. var_dump($chort_members));
 		
         if (!$this->ldap_connect()) {
 			return;
@@ -478,7 +477,7 @@ $trace->output('cohort_members '. var_dump($chort_members));
 		$ldapconnection = $this->ldapconnection;
 
 		$count = 0;
-		$wanted_fields = "";//all
+		$wanted_fields = array("cn","uid","sn","givenname","mail");
 
 		//contexts for searching cohorts
 		$contexts = explode(';', $this->config->user_contexts);
@@ -579,8 +578,6 @@ $trace->output('cohort_members '. var_dump($chort_members));
 			'givenname'         => 'firstname',
 			'sn'                => 'lastname',
 			'mail'              => 'email',
-			'logindisabled'     => 'suspended',
-			'description'       => 'description'
 		);
 
 		if ($this->config->user_idnumber) {
