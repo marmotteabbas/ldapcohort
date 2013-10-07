@@ -223,7 +223,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 		require_once("{$CFG->dirroot}/user/lib.php");
 
 		/*
-		if ($this->config->autocreate_cohorts) {
+		
 		}else{
 		}
 			$listcohorts=cohort_get_cohorts(context_system::instance()->id)['cohorts'];
@@ -272,8 +272,19 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 
 		//contexts for searching cohorts
 		$contexts = explode(';', $this->config->cohort_contexts);
-
-		$filter = '(&('.$this->config->cohort_name.'=*)'.$this->config->cohort_objectclass.')';
+        if ($this->config->autocreate_cohorts) {
+            $filter = '(&('.$this->config->cohort_name.'=*)(|';
+        }else{
+            $filter = '(|';
+            $listcohorts=cohort_get_cohorts(context_system::instance()->id)['cohorts'];
+			
+            foreach ($listcohorts as $cohortid=>$cohort) {
+			    $filter .= '(' . $this->config->cohort_name . '=' . $cohort->{$this->config->cohort_syncing_field} . ')';
+            }
+        }
+		$filter .= ')'.$this->config->cohort_objectclass.')';
+        
+        
 
 	$flat_results=$this->ldap_search($contexts,$filter,$wanted_fields,$this->config->cohort_search_sub);
 
@@ -486,7 +497,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 		foreach ($uid_in as $uid) {
             $pos=strpos($uid,",");
             if ($pos === false) {
-                $user_filter .= '(' . $this->config->user_member_attribute . '=' . $uid . ')';
+                $user_filter .= '(' . $this->config->user_attribute . '=' . $uid . ')';
             }else{
                 $uid=explode(",",$uid);
                 $user_filter .= '(' .  $uid[0] . ')';
@@ -517,7 +528,19 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                     }
 				} else {
 					$this->_users_existing++;
-					unset($cohort_members[$moodle_user->id]);
+                    $values = array (
+                        'givenname'         => 'firstname',
+                        'sn'                => 'lastname',
+                        'mail'              => 'email',
+                    );
+                    foreach ($values as $ldap_key => $moodle_field) {
+                        if (!$moodle_user->{$moodle_field}) {
+                            $moodle_user->{$moodle_field} = $ldap_user[$ldap_key][0]; 
+                            $DB->update_record('user', $moodle_user);
+                        }
+                    }
+					
+                    unset($cohort_members[$moodle_user->id]);
                     
                     //update user
 				}
