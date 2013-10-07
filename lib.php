@@ -275,7 +275,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
         if ($this->config->autocreate_cohorts) {
             $filter = '(&('.$this->config->{'cohort_'.$this->config->cohort_syncing_field}.'=*)(|';
         }else{
-            $filter = '(|';
+            $filter = '(&(|';
             $listcohorts=cohort_get_cohorts(context_system::instance()->id)['cohorts'];
 			
             foreach ($listcohorts as $cohortid=>$cohort) {
@@ -283,7 +283,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 		    $filter .= '(' . $this->config->{'cohort_'.$this->config->cohort_syncing_field} . '=' . $cohort->{$this->config->cohort_syncing_field} . ')';}
             }
 			}
-		$filter .= $this->config->cohort_objectclass.')';
+		$filter .= ')'.$this->config->cohort_objectclass.')';
         
         
 if ($this->config->debug_mode){$trace->output( $filter);}
@@ -487,7 +487,7 @@ if ($this->config->debug_mode){$trace->output( $filter);}
 		if (empty($uid_in)) {
 			continue;
 		}
-		$trace->output(get_string('cohort_sync_users', 'enrol_ldapcohort'), "");
+		$trace->output(get_string('cohort_sync_users', 'enrol_ldapcohort'), 4);
 		global $CFG, $DB;
 		$ldapconnection = $this->ldapconnection;
 
