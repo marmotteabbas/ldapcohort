@@ -273,18 +273,21 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 		//contexts for searching cohorts
 		$contexts = explode(';', $this->config->cohort_contexts);
         if ($this->config->autocreate_cohorts) {
-            $filter = '(&('.$this->config->cohort_name.'=*)(|';
+            $filter = '(&('.$this->config->{'cohort_'.$this->config->cohort_syncing_field}.'=*)(|';
         }else{
             $filter = '(|';
             $listcohorts=cohort_get_cohorts(context_system::instance()->id)['cohorts'];
 			
             foreach ($listcohorts as $cohortid=>$cohort) {
-			    $filter .= '(' . $this->config->cohort_name . '=' . $cohort->{$this->config->cohort_syncing_field} . ')';
+		if ($cohort->{$this->config->cohort_syncing_field}){
+		    $filter .= '(' . $this->config->{'cohort_'.$this->config->cohort_syncing_field} . '=' . $cohort->{$this->config->cohort_syncing_field} . ')';}
             }
-        }
-		$filter .= ')'.$this->config->cohort_objectclass.')';
+			}
+		$filter .= $this->config->cohort_objectclass.')';
         
         
+if ($this->config->debug_mode){$trace->output( $filter);}
+
 
 	$flat_results=$this->ldap_search($contexts,$filter,$wanted_fields,$this->config->cohort_search_sub);
 
