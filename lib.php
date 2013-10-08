@@ -225,27 +225,6 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 		require_once("{$CFG->dirroot}/cohort/lib.php");
 		require_once("{$CFG->dirroot}/user/lib.php");
 
-		/*
-		
-		}else{
-		}
-			$listcohorts=cohort_get_cohorts(context_system::instance()->id)['cohorts'];
-			if ($CFG->debug_ldap_groupes){
-			pp_print_object('list of cohorts ',$listcohorts);
-			}
-			foreach ($listcohorts as $cohortid=>$cohort) {
-			$groupname=$cohort->idnumber;
-			print "syncyng group " . $groupname .PHP_EOL;
-				if (!empty ($groupname)&& ($groupname!=null)&&($groupname!="")){
-				$ldap_members = $this->ldap_get_group_members($groupname);
-				if (count($ldap_members)==0) {
-					print "not updating empty LDAP group " . $cohort->name .PHP_EOL;
-				}else{
-					$this->ldap_update_cohort_group_members($ldap_members,$cohortid);
-				}
-			}
-		}
-		*/
 		// we may need a lot of memory here
 		@set_time_limit(0);
 		raise_memory_limit(MEMORY_HUGE);
@@ -298,7 +277,7 @@ if ($this->config->debug_mode){$trace->output( $filter);}
 				foreach ($flat_results as $ldapgroup) {
 					$ldapgroup = array_change_key_case($ldapgroup, CASE_LOWER);
 
-					if (empty($ldapgroup[ $this->config->{'cohort_'.$this->config->cohort_syncing_field}][0]) {
+					if (empty($ldapgroup[ $this->config->{'cohort_'.$this->config->cohort_syncing_field}][0])) {
 						if ($this->config->debug_mode){$trace->output(get_string('err_invalid_cohort_name', 'enrol_ldapcohort',  $this->config->{'cohort_'.$this->config->cohort_syncing_field}));}
 																continue;
 					}
