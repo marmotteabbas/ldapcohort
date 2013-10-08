@@ -2,9 +2,6 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$userfields = array('username','idnumber','firstname','lastname','email' );
-$cohortfields = array ('name', 'idnumber', 'description');
-
 class enrol_ldapcohort_plugin extends enrol_plugin
 {
 	protected $enrol_localcoursefield = 'idnumber';
@@ -15,6 +12,9 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 	private $_users_added = 0;
 	private $_users_existing = 0;
  
+	protected $userfields = array('username','idnumber','firstname','lastname','email' );
+	protected $cohortfields = array ('name', 'idnumber', 'description');
+
 	/**
 	 * cohorts that will get synchronize
 	 * @var array
@@ -279,7 +279,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
             $filter = '(&('.$this->config->{'cohort_'.$this->config->cohort_syncing_field}.'=*)(|';
         }else{
             $filter = '(&(|';
-            $listcohorts=cohort_get_all_cohorts();
+            $listcohorts=$this->cohort_get_all_cohorts();
 			
             foreach ($listcohorts as $cohortid=>$cohort) {
 		if ($cohort->{$this->config->cohort_syncing_field}){
