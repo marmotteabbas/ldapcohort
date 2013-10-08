@@ -298,16 +298,12 @@ if ($this->config->debug_mode){$trace->output( $filter);}
 				foreach ($flat_results as $ldapgroup) {
 					$ldapgroup = array_change_key_case($ldapgroup, CASE_LOWER);
 
-					if (empty($ldapgroup[$this->config->cohort_name][0])) {
-						if ($this->config->debug_mode){$trace->output(get_string('err_invalid_cohort_name', 'enrol_ldapcohort', $this->config->cohort_name));}
+					if (empty($ldapgroup[ $this->config->{'cohort_'.$this->config->cohort_syncing_field}][0]) {
+						if ($this->config->debug_mode){$trace->output(get_string('err_invalid_cohort_name', 'enrol_ldapcohort',  $this->config->{'cohort_'.$this->config->cohort_syncing_field}));}
 																continue;
 					}
 
-					if (empty($ldapgroup[$this->config->cohort_idnumber][0])) {
-						if ($this->config->debug_mode){$trace->output(get_string('err_invalid_cohort_idnumber', 'enrol_ldapcohort', $this->config->cohort_idnumber));}
-																continue;
-					}
-
+                
 					$ldapgroupname = $ldapgroup[ $this->config->{'cohort_'.$this->config->cohort_syncing_field}][0];
                     $moodle_cohort=$this->search_cohort($ldapgroupname,$trace);
 					//$this->_cohorts[$moodle_cohort->idnumber] = $moodle_cohort;
