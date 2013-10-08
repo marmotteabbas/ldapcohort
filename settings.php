@@ -94,7 +94,7 @@ $cohortfields = array ('name', 'idnumber', 'description');
         $settings->add(new admin_setting_ldapcohort_trim_lower('enrol_ldapcohort/user_member_attribute', get_string('user_member_attribute_key', 'enrol_ldapcohort'), get_string('user_member_attribute', 'enrol_ldapcohort'), 'memberUid', true));
         $settings->add(new admin_setting_configtext('enrol_ldapcohort/user_objectclass', get_string('objectclass_key', 'enrol_ldapcohort'), get_string('user_objectclass', 'enrol_ldapcohort'), ''));
         foreach ($userfields as $field) {
-            $settings->add(new admin_setting_ldapcohort_trim_lower('enrol_ldapcohort/user_'.$field, get_string('user_'.$field.'_key', 'enrol_ldapcohort'), get_string('user_'.$field, 'enrol_ldapcohort'),'' , true));
+            $settings->add(new admin_setting_ldapcohort_trim_lower('enrol_ldapcohort/user_'.$field, get_string('user_'.$field.'_key', 'enrol_ldapcohort'), get_string('user_'.$field, 'enrol_ldapcohort'), ($field == 'username' ? 'uid' : ($field == 'lastname' ? 'sn' : ($field=='firstname'? 'givenName':''))) , true));
         }
     }
 }

@@ -233,9 +233,9 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 		$trace->output(get_string('synchronizing_cohorts', 'enrol_ldapcohort'));
 
 		$wanted_fields = array();
-        foreach ($this->cohortfields as fields){
-            if (!empty($this->config->{'cohort_'.$fields})) {
-                array_push($wanted_fields, $this->config->{'cohort_'.$fields});
+        foreach ($this->cohortfields as $field){
+            if (!empty($this->config->{'cohort_'.$field})) {
+                array_push($wanted_fields, $this->config->{'cohort_'.$field});
             }
         }
 		
@@ -467,14 +467,15 @@ if ($this->config->debug_mode){$trace->output( $filter);}
 
 		$count = 0;
 		$wanted_fields = array();
-        foreach ($this->userfields as fields){
-            if (!empty($this->config->{'user_'.$fields})) {
-                array_push($wanted_fields, $this->config->{'user_'.$fields});
+        foreach ($this->userfields as $field){
+		$ldap_field=$this->config->{'user_'.$field};       
+		if (!empty($lsap_field)) {
+                array_push($wanted_fields, $ldap_field);
             }
         }
 		//contexts for searching cohorts
 		$contexts = explode(';', $this->config->user_contexts);
-		$user_filter = '(&('.$this->config->user_username.'=*)(|';
+		$user_filter = '(&(|';
 		foreach ($uid_in as $uid) {
             $pos=strpos($uid,",");
             if ($pos === false) {
@@ -484,9 +485,11 @@ if ($this->config->debug_mode){$trace->output( $filter);}
                 $user_filter .= '(' .  $uid[0] . ')';
     
             }
+
 		}
-		$user_filter .= ')'.$this->config->user_objectclass.')';
-        $ldap_users=$this->ldap_search($contexts,$user_filter,$wanted_fields,$this->config->user_search_sub);
+		$user_filter.=')';
+		$user_filter .= '(objectClass='.$this->config->user_objectclass.'))';
+			$ldap_users=$this->ldap_search($contexts,$user_filter,$wanted_fields,$this->config->user_search_sub);
     
         if (count($ldap_users)) {
 			foreach ($ldap_users as $i => $ldap_user) {
@@ -511,15 +514,16 @@ if ($this->config->debug_mode){$trace->output( $filter);}
 					$this->_users_existing++;
                     $update=false;
                     foreach ($this->userfields as $field){
-                        $ldap_field=$this->config->{'user_'.$field};
-                        if ((!$moodle_user->{$field})&& (isset($ldap_user[$ldap_field]))) {
+                                 $ldap_field=$this->config->{'user_'.$field};
+		if ((!$moodle_user->{$field})&& (isset($ldap_user[$ldap_field]))) {
+				$textlib =new textlib();
                                 if (is_array($ldap_user[$ldap_field])) {
                                     $newval = $textlib->convert($ldap_user[$ldap_field][0], $this->config->ldapencoding, 'utf-8');
                                 } else {
                                     $newval = $textlib->convert($ldap_user[$ldap_field], $this->config->ldapencoding, 'utf-8');
                                 }
                                 $moodle_user->{$field} = $newval;
-                                $update=true;
+$update=true;
                             }    
                     }
                     if ($update) {
@@ -546,7 +550,7 @@ if ($this->config->debug_mode){$trace->output( $filter);}
 			}
 		}
         foreach ($cohort_members as $userid => $user) {
-	        cohort_remove_member($cohortid, $userid);
+	        cohort_remove_member($moodle_cohort->id, $userid);
 	            
 	        }
 	    
