@@ -233,18 +233,12 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 		$trace->output(get_string('synchronizing_cohorts', 'enrol_ldapcohort'));
 
 		$wanted_fields = array();
-		if (!empty($this->config->cohort_name)) {
-			array_push($wanted_fields, $this->config->cohort_name);
-		}
-
-		if (!empty($this->config->cohort_idnumber)) {
-			array_push($wanted_fields, $this->config->cohort_idnumber);
-		}
-
-		if (!empty($this->config->cohort_description)) {
-			array_push($wanted_fields, $this->config->cohort_description);
-		}
-
+        foreach ($this->cohortfields as fields){
+            if (!empty($this->config->{'cohort_'.$fields})) {
+                array_push($wanted_fields, $this->config->{'cohort_'.$fields});
+            }
+        }
+		
 		if (empty($this->config->cohort_member_attribute)) {
 			if ($this->config->debug_mode){$trace->output(get_string('err_member_attribute', 'enrol_ldapcohort'));}
 			return;
@@ -255,17 +249,19 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 		//contexts for searching cohorts
 		$contexts = explode(';', $this->config->cohort_contexts);
         if ($this->config->autocreate_cohorts) {
-            $filter = '(&('.$this->config->{'cohort_'.$this->config->cohort_syncing_field}.'=*)(|';
+            $filter = '(&('.$this->config->filter.')';
         }else{
             $filter = '(&(|';
             $listcohorts=$this->cohort_get_all_cohorts();
 			
             foreach ($listcohorts as $cohortid=>$cohort) {
-		if ($cohort->{$this->config->cohort_syncing_field}){
-		    $filter .= '(' . $this->config->{'cohort_'.$this->config->cohort_syncing_field} . '=' . $cohort->{$this->config->cohort_syncing_field} . ')';}
+                if ($cohort->{$this->config->cohort_syncing_field}){
+                    $filter .= '(' . $this->config->{'cohort_'.$this->config->cohort_syncing_field} . '=' . $cohort->{$this->config->cohort_syncing_field} . ')';
+                }
             }
+            $filter .= ')';
 			}
-		$filter .= ')'.$this->config->cohort_objectclass.')';
+		$filter .= '(objectClass='.$this->config->cohort_objectclass.'))';
         
         
 if ($this->config->debug_mode){$trace->output( $filter);}
@@ -470,8 +466,12 @@ if ($this->config->debug_mode){$trace->output( $filter);}
 		$ldapconnection = $this->ldapconnection;
 
 		$count = 0;
-		$wanted_fields = array("cn","uid","sn","givenname","mail");
-
+		$wanted_fields = array();
+        foreach ($this->userfields as fields){
+            if (!empty($this->config->{'user_'.$fields})) {
+                array_push($wanted_fields, $this->config->{'user_'.$fields});
+            }
+        }
 		//contexts for searching cohorts
 		$contexts = explode(';', $this->config->user_contexts);
 		$user_filter = '(&('.$this->config->user_username.'=*)(|';
@@ -509,17 +509,23 @@ if ($this->config->debug_mode){$trace->output( $filter);}
                     }
 				} else {
 					$this->_users_existing++;
-                    $values = array (
-                        'givenname'         => 'firstname',
-                        'sn'                => 'lastname',
-                        'mail'              => 'email',
-                    );
-                    foreach ($values as $ldap_key => $moodle_field) {
-                        if (!$moodle_user->{$moodle_field}) {
-                            $moodle_user->{$moodle_field} = $ldap_user[$ldap_key][0]; 
+                    $update=false;
+                    foreach ($this->userfields as $field){
+                        $ldap_field=$this->config->{'user_'.$field};
+                        if ((!$moodle_user->{$field})&& (isset($ldap_user[$ldap_field]))) {
+                                if (is_array($ldap_user[$ldap_field])) {
+                                    $newval = $textlib->convert($ldap_user[$ldap_field][0], $this->config->ldapencoding, 'utf-8');
+                                } else {
+                                    $newval = $textlib->convert($ldap_user[$ldap_field], $this->config->ldapencoding, 'utf-8');
+                                }
+                                $moodle_user->{$field} = $newval;
+                                $update=true;
+                            }    
+                    }
+                    if ($update) {
                             $DB->update_record('user', $moodle_user);
                         }
-                    }
+                    
 					
                     unset($cohort_members[$moodle_user->id]);
                     
@@ -572,31 +578,21 @@ if ($this->config->debug_mode){$trace->output( $filter);}
 	private function create_user($ldap_user)
 	{
 		global $CFG, $DB;
-	$textlib =new textlib();
-	$user = new stdClass();
-	$user->username = trim(textlib::strtolower($ldap_user['uid'][0]));
-
-		$values = array (
-			'givenname'         => 'firstname',
-			'sn'                => 'lastname',
-			'mail'              => 'email',
-		);
-
-		if ($this->config->user_idnumber) {
-			$values[$this->config->user_idnumber] = 'idnumber';
-		}
-
-		//TODO: should these be configurable ?
-		foreach ($values as $ldap_key => $moodle_field) {
-			if (isset($ldap_user[$ldap_key])) {
-				if (is_array($ldap_user[$ldap_key])) {
-					$newval = $textlib->convert($ldap_user[$ldap_key][0], $this->config->ldapencoding, 'utf-8');
-				} else {
-					$newval = $textlib->convert($ldap_user[$ldap_key], $this->config->ldapencoding, 'utf-8');
-				}
-				$user->{$moodle_field} = $newval;
-			}
-		}
+        $textlib =new textlib();
+        $user = new stdClass();
+        //$user->username = trim(textlib::strtolower($ldap_user['uid'][0]));
+        foreach ($this->userfields as $field){
+                $ldap_field=$this->config->{'user_'.$fields};
+            if (isset($ldap_user[$ldap_field])) {
+                    if (is_array($ldap_user[$ldap_field])) {
+                        $newval = $textlib->convert($ldap_user[$ldap_field][0], $this->config->ldapencoding, 'utf-8');
+                    } else {
+                        $newval = $textlib->convert($ldap_user[$ldap_field], $this->config->ldapencoding, 'utf-8');
+                    }
+                    $user->{$field} = $newval;
+                }    
+        }
+		
 
 		// Prep a few params
 		$user->timecreated =  $user->timemodified   = time();
@@ -613,11 +609,11 @@ if ($this->config->debug_mode){$trace->output( $filter);}
 	private function create_cohort($ldap_entry)
 	{
 		$cohort = new stdClass();
-
-		$cohort->idnumber       = isset ($ldap_entry[$this->config->cohort_idnumber][0]) ? $ldap_entry[$this->config->cohort_idnumber][0] : 0;
-		$cohort->name           = isset ($ldap_entry[$this->config->cohort_name][0]) ? $ldap_entry[$this->config->cohort_name][0] : '';
-		$cohort->description    = isset ($ldap_entry[$this->config->cohort_description][0]) ? $ldap_entry[$this->config->cohort_description][0] : '';
-
+        foreach ($this->cohortfields as $field){
+            $ldap_field=$this->config->{'cohort_'.$field};
+            isset ($ldap_entry[$ldap_field][0]) ? $ldap_entry[$ldap_field][0] : '';
+        }
+		
 		$cohort->description    = '<strong>[LDAP Cohort Sync]</strong> ' . date("d/m/Y H:i:s"). $cohort->description;
 
 		$cohort->contextid      = $this->config->context;

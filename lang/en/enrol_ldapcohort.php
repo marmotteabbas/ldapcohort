@@ -68,8 +68,10 @@ $string['host_url_key'] = 'Host URL';
 
 $string['ldap_encoding'] = 'Specify encoding used by LDAP server. Most probably utf-8, MS AD v2 uses default platform encoding such as cp1252, cp1250, etc.';
 $string['ldap_encoding_key'] = 'LDAP encoding';
-$string['objectclass'] = 'objectClass used to search cohorts. Usually \'(objectClass=group)\' or \'(objectClass=posixGroup)\'';
+$string['objectclass'] = 'objectClass used to search cohorts. Usually \'groupOfNames\' or \'posixGroup\'';
 $string['objectclass_key'] = 'Object class';
+$string['filter'] = 'LDAP filter used to search cohorts. Usually \'cn=*\' or \'cn=*2013*\'';
+$string['filter_key'] = 'Filter';
 
 $string['phpldap_noextension'] = '<em>The PHP LDAP module does not seem to be present. Please ensure it is installed and enabled if you want to use this enrolment plugin.</em>';
 $string['pluginname'] = 'LDAP Cohort Synchronization';

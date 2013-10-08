@@ -65,7 +65,8 @@ $cohortfields = array ('name', 'idnumber', 'description');
         
         //--- cohort lookup settings
         $settings->add(new admin_setting_heading('enrol_ldapcohort_cohort', get_string('cohort_lookup', 'enrol_ldapcohort'), ''));
-        $settings->add(new admin_setting_configtext('enrol_ldapcohort/cohort_objectclass', get_string('objectclass_key', 'enrol_ldapcohort'), get_string('objectclass', 'enrol_ldapcohort'), '(objectClass=posixGroup)'));
+        $settings->add(new admin_setting_configtext('enrol_ldapcohort/cohort_objectclass', get_string('objectclass_key', 'enrol_ldapcohort'), get_string('objectclass', 'enrol_ldapcohort'), 'posixGroup'));
+        $settings->add(new admin_setting_configtext('enrol_ldapcohort/cohort_filter', get_string('filter_key', 'enrol_ldapcohort'), get_string('filter', 'enrol_ldapcohort'), '(cn=*)'));
         $settings->add(new admin_setting_configtext('enrol_ldapcohort/cohort_contexts', get_string('cohort_contexts_key', 'enrol_ldapcohort'), get_string('cohort_contexts', 'enrol_ldapcohort'), ''));
         $settings->add(new admin_setting_configselect('enrol_ldapcohort/cohort_search_sub', get_string('search_subcontexts_key', 'enrol_ldapcohort'), get_string('cohort_search_sub', 'enrol_ldapcohort'), key($yesno), $yesno));
         $settings->add(new admin_setting_ldapcohort_trim_lower('enrol_ldapcohort/cohort_member_attribute', get_string('cohort_member_attribute_key', 'enrol_ldapcohort'), get_string('cohort_member_attribute', 'enrol_ldapcohort'), 'member', true));
