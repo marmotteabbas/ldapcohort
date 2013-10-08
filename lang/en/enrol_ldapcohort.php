@@ -89,17 +89,22 @@ $string['synchronizing_cohorts'] = 'Synchronizing cohorts...';
 $string['cohort_synchronized_with_group']='Cohort synchronized with LDAP group {$a}';
 $string['cohort_synchronized_with_attribute']='Cohort synchronized with LDAP attribute {$a}';
 
-
-$string['user_usernamee'] = 'Optional: Overrides the attribute used to name/search users. Usually \'cn\'.';
+$string['user_idnumber'] = 'Field to map with ID Number for a user entry. (Usually, this is uid or uidNumber)';
+$string['user_idnumber_key'] = 'User ID Number';
+$string['user_username'] = 'Optional: Overrides the attribute used to name/search users. Usually \'cn\'.';
 $string['user_username_key'] = 'User attribute';
+$string['user_firstname'] = 'Field to map with firstname for a user entry.';
+$string['user_firstname_key'] = 'User firstname';
+$string['user_lastname'] = 'Field to map with lastname for a user entry.';
+$string['user_lastname_key'] = 'User lastname';
+$string['user_email'] = 'Field to map with email for a user entry.';
+$string['user_email_key'] = 'User email';
 $string['user_contexts'] = 'List of contexts where users are located. Separate different contexts with \';\'. For example: \'ou=users,o=org; ou=others,o=org\'';
 $string['user_contexts_key'] = 'Contexts';
 $string['user_created'] = 'User "{$a}" created';
 $string['user_dbinsert'] = 'Inserted user {$a->name} with id {$a->id}';
 $string['user_dereference'] = 'Determines how aliases are handled during search. Select one of the following values: "No" (LDAP_DEREF_NEVER) or "Yes" (LDAP_DEREF_ALWAYS)';
 $string['user_dereference_key'] = 'Dereference aliases';
-$string['user_idnumber'] = 'Field to map with ID Number for a user entry. (Usually, this is uid or uidNumber)';
-$string['user_idnumber_key'] = 'User ID Number';
 $string['user_lookup'] = 'User lookup settings';
 $string['user_member_attribute'] = 'Group membership attribute in user entry. This denotes the user group(s) memberhsips. Usually \'member\', or \'memberUid\'';
 $string['user_member_attribute_key'] = 'User member attribute';
