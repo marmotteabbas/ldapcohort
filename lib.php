@@ -2,6 +2,9 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+var $userfields = array('username','idnumber','firstname','lastname','email' );
+var $cohortfields = array ('name', 'idnumber', 'description');
+
 class enrol_ldapcohort_plugin extends enrol_plugin
 {
 	protected $enrol_localcoursefield = 'idnumber';
@@ -11,7 +14,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 	private $_cohorts_existing = 0;
 	private $_users_added = 0;
 	private $_users_existing = 0;
-
+ 
 	/**
 	 * cohorts that will get synchronize
 	 * @var array
@@ -276,7 +279,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
             $filter = '(&('.$this->config->{'cohort_'.$this->config->cohort_syncing_field}.'=*)(|';
         }else{
             $filter = '(&(|';
-            $listcohorts=cohort_get_cohorts(context_system::instance()->id)['cohorts'];
+            $listcohorts=cohort_get_all_cohorts();
 			
             foreach ($listcohorts as $cohortid=>$cohort) {
 		if ($cohort->{$this->config->cohort_syncing_field}){
@@ -419,7 +422,7 @@ if ($this->config->debug_mode){$trace->output( $filter);}
 
 			//contexts for searching cohorts
 			$contexts = explode(';', $this->config->user_contexts);
-			$user_filter = '(&('.$this->config->user_attribute.'=*)(|';
+			$user_filter = '(&('.$this->config->user_username.'=*)(|';
 			$user_filter .= '(' . $this->config->user_member_attribute . '=' . $user->username . ')';
 			$user_filter .= ')'.$this->config->user_objectclass.')';
 			$ldap_user=$this->ldap_search($contexts,$user_filter,$wanted_fields,$this->config->user_search_sub);
@@ -496,11 +499,11 @@ if ($this->config->debug_mode){$trace->output( $filter);}
 
 		//contexts for searching cohorts
 		$contexts = explode(';', $this->config->user_contexts);
-		$user_filter = '(&('.$this->config->user_attribute.'=*)(|';
+		$user_filter = '(&('.$this->config->user_username.'=*)(|';
 		foreach ($uid_in as $uid) {
             $pos=strpos($uid,",");
             if ($pos === false) {
-                $user_filter .= '(' . $this->config->user_attribute . '=' . $uid . ')';
+                $user_filter .= '(' . $this->config->user_username . '=' . $uid . ')';
             }else{
                 $uid=explode(",",$uid);
                 $user_filter .= '(' .  $uid[0] . ')';
@@ -583,7 +586,7 @@ if ($this->config->debug_mode){$trace->output( $filter);}
 		$ldap_contexts = explode(';', $this->get_config('user_contexts'));
 		$ldap_defaults = $this->config->objectclass;
 		$contexts = explode(';', $this->config->user_contexts);
-		$user_filter = '(&('.$this->config->user_attribute.'=*)';
+		$user_filter = '(&('.$this->config->user_username.'=*)';
 		$user_filter .= $this->config->user_objectclass.')';
 
 
@@ -709,6 +712,20 @@ if ($this->config->debug_mode){$trace->output( $filter);}
 			return false;
 		}
 	}
+    function cohort_get_all_cohorts()
+    {
+        global $DB;
+    
+        // Add some additional sensible conditions
+       
+    
+        $fields = "SELECT *";
+        $sql = " FROM {cohort}";
+        $order = " ORDER BY name ASC, idnumber ASC";
+        $cohorts = $DB->get_records_sql($fields . $sql . $order, null, 0, 0);
+    
+        return $cohorts;
+    }
 }
 
 function get_category_options()

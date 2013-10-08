@@ -90,8 +90,8 @@ $string['cohort_synchronized_with_group']='Cohort synchronized with LDAP group {
 $string['cohort_synchronized_with_attribute']='Cohort synchronized with LDAP attribute {$a}';
 
 
-$string['user_attribute'] = 'Optional: Overrides the attribute used to name/search users. Usually \'cn\'.';
-$string['user_attribute_key'] = 'User attribute';
+$string['user_usernamee'] = 'Optional: Overrides the attribute used to name/search users. Usually \'cn\'.';
+$string['user_username_key'] = 'User attribute';
 $string['user_contexts'] = 'List of contexts where users are located. Separate different contexts with \';\'. For example: \'ou=users,o=org; ou=others,o=org\'';
 $string['user_contexts_key'] = 'Contexts';
 $string['user_created'] = 'User "{$a}" created';

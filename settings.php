@@ -26,7 +26,7 @@ if ($ADMIN->fulltree) {
     if (!function_exists('ldap_connect')) {
         $settings->add(new admin_setting_heading('enrol_phpldapcohort_noextension', '', get_string('phpldap_noextension', 'enrol_ldapcohort')));
     } else {
-        require_once($CFG->dirroot.'/enrol/ldap/settingslib.php');
+        require_once($CFG->dirroot.'/enrol/ldapcohort/settingslib.php');
         require_once($CFG->libdir.'/ldaplib.php');
         require_once(dirname(__FILE__).'/lib.php');
         
@@ -67,7 +67,6 @@ if ($ADMIN->fulltree) {
         $settings->add(new admin_setting_configselect('enrol_ldapcohort/cohort_search_sub', get_string('search_subcontexts_key', 'enrol_ldapcohort'), get_string('cohort_search_sub', 'enrol_ldapcohort'), key($yesno), $yesno));
         $settings->add(new admin_setting_ldapcohort_trim_lower('enrol_ldapcohort/cohort_member_attribute', get_string('cohort_member_attribute_key', 'enrol_ldapcohort'), get_string('cohort_member_attribute', 'enrol_ldapcohort'), 'member', true));
         $settings->add(new admin_setting_ldapcohort_trim_lower('enrol_ldapcohort/cohort_syncing_field', get_string('cohort_syncing_field_key', 'enrol_ldapcohort'), get_string('cohort_syncing_field', 'enrol_ldapcohort'), 'idnumber', true));
-        $cohortfields = array ('name', 'idnumber', 'description');
         foreach ($cohortfields as $field) {
             $settings->add(new admin_setting_ldapcohort_trim_lower('enrol_ldapcohort/cohort_'.$field, get_string('cohort_'.$field.'_key', 'enrol_ldapcohort'), get_string('cohort_'.$field, 'enrol_ldapcohort'), ($field == 'description' ? 'description' : ($field == 'name' ? 'cn' : '')), true));
         }
@@ -89,9 +88,9 @@ if ($ADMIN->fulltree) {
         $settings->add(new admin_setting_configtext('enrol_ldapcohort/user_contexts', get_string('user_contexts_key', 'enrol_ldapcohort'), get_string('user_contexts', 'enrol_ldapcohort'), ''));
         $settings->add(new admin_setting_configselect('enrol_ldapcohort/user_search_sub', get_string('search_subcontexts_key', 'enrol_ldapcohort'), get_string('user_search_sub', 'enrol_ldapcohort'), key($yesno), $yesno));
         $settings->add(new admin_setting_ldapcohort_trim_lower('enrol_ldapcohort/user_member_attribute', get_string('user_member_attribute_key', 'enrol_ldapcohort'), get_string('user_member_attribute', 'enrol_ldapcohort'), 'memberUid', true));
-        $settings->add(new admin_setting_ldapcohort_trim_lower('enrol_ldapcohort/user_attribute', get_string('user_attribute_key', 'enrol_ldapcohort'), get_string('user_attribute', 'enrol_ldapcohort'), '', true));
-        $settings->add(new admin_setting_ldapcohort_trim_lower('enrol_ldapcohort/user_idnumber', get_string('user_idnumber_key', 'enrol_ldapcohort'), get_string('user_idnumber', 'enrol_ldapcohort'), 'uidnumber', true));
         $settings->add(new admin_setting_configtext('enrol_ldapcohort/user_objectclass', get_string('objectclass_key', 'enrol_ldapcohort'), get_string('user_objectclass', 'enrol_ldapcohort'), ''));
-        
+        foreach ($userfields as $field) {
+            $settings->add(new admin_setting_ldapcohort_trim_lower('enrol_ldapcohort/user_'.$field, get_string('user_'.$field.'_key', 'enrol_ldapcohort'), get_string('user_'.$field, 'enrol_ldapcohort'), ($field == 'description' ? 'description' : ($field == 'name' ? 'cn' : '')), true));
+        }
     }
 }
