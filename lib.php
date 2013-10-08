@@ -2,8 +2,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-var $userfields = array('username','idnumber','firstname','lastname','email' );
-var $cohortfields = array ('name', 'idnumber', 'description');
+$userfields = array('username','idnumber','firstname','lastname','email' );
+$cohortfields = array ('name', 'idnumber', 'description');
 
 class enrol_ldapcohort_plugin extends enrol_plugin
 {
