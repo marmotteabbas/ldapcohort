@@ -179,9 +179,11 @@ class enrol_ldapcohort_plugin extends enrol_plugin
             foreach ($ldapmembers as $ldapmember) {
                 $result = ldap_read($this->ldapconnection, $ldapmember, '(objectClass='.$this->config->user_objectclass.')',
                                     array($this->config->user_username));
-                $entry = ldap_first_entry($this->ldapconnection, $result);
-                $values = ldap_get_values($this->ldapconnection, $entry, $this->config->user_username);
-                array_push($memberidnumbers, $values[0]);
+		if ($result){
+			$entry = ldap_first_entry($this->ldapconnection, $result);
+                	$values = ldap_get_values($this->ldapconnection, $entry, $this->config->user_username);
+			array_push($memberidnumbers, $values[0]);
+		}
             }
 
             $ldapmembers = $memberidnumbers;
@@ -261,30 +263,34 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                 $dn = $group;
 
                 $result = ldap_read($this->ldapconnection, $dn, '(objectClass=*)', array('objectClass'));
-                $entry = ldap_first_entry($this->ldapconnection, $result);
-                $objectclass = ldap_get_values($this->ldapconnection, $entry, 'objectClass');
+		if ($result){
+			$entry = ldap_first_entry($this->ldapconnection, $result);
+                	$objectclass = ldap_get_values($this->ldapconnection, $entry, 'objectClass');
 
-                if (!in_array('group', $objectclass)) {
-                    // Not a group, so return immediately.
-                    return array($group);
-                }
+                	if (!in_array('group', $objectclass)) {
+                    	// Not a group, so return immediately.
+                   	 return array($group);
+                	}
+		}
 
                 $result = ldap_read($this->ldapconnection, $dn, '(objectClass=*)', array($memberattribute));
-                $entry = ldap_first_entry($this->ldapconnection, $result);
-                $members = @ldap_get_values($this->ldapconnection, $entry, $memberattribute); // Can be empty and throws a warning
-                if ($members['count'] == 0) {
-                    // There are no members in this group, return nothing.
-                    return array();
-                }
-                unset($members['count']);
+		if ($result){
+			$entry = ldap_first_entry($this->ldapconnection, $result);
+                	$members = @ldap_get_values($this->ldapconnection, $entry, $memberattribute); // Can be empty and throws a warning
+                	if ($members['count'] == 0) {
+                    	// There are no members in this group, return nothing.
+                   	 return array();
+                	}	
+                	unset($members['count']);
 
-                $users = array();
-                foreach ($members as $member) {
-                    $group_members = $this->ldap_explode_group($member, $memberattribute);
-                    $users = array_merge($users, $group_members);
-                }
+                	$users = array();
+                	foreach ($members as $member) {
+                    		$group_members = $this->ldap_explode_group($member, $memberattribute);
+                   		 $users = array_merge($users, $group_members);
+                	}
 
-                return ($users);
+                	return ($users);
+		}
                 break;
             default:
                 error_log($this->errorlogtag.get_string('explodegroupusertypenotsupported', 'enrol_ldap',
@@ -429,8 +435,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 					if (!empty($ldapgroup[$this->config->cohort_member_attribute])) {
 						$ldapmembers = $ldapgroup[$this->config->cohort_member_attribute];
 						unset($ldapmembers['count']); // Remove oddity ;)
-						if ($this->config->debug_mode){$trace->output(get_string('err_create_cohort', 'enrol_ldapcohort', $ldapgroupname));}
-				c
+
                         if (($this->config->memberattribute_isdn
                                 && ($this->config->user_username !== 'dn')
                                 && ($this->config->user_username !== 'distinguishedname'))
