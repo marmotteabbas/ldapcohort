@@ -417,7 +417,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 																continue;
 					}
 
-                
+                    $ldapmembers = array();
 					$ldapgroupname = $ldapgroup[ $this->config->{'cohort_'.$this->config->cohort_syncing_field}][0];
                     $moodle_cohort=$this->search_cohort($ldapgroupname,$trace);
 					//$this->_cohorts[$moodle_cohort->idnumber] = $moodle_cohort;
@@ -427,8 +427,10 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 			}
 					if (!empty($ldapgroup[$this->config->cohort_member_attribute])) {
 						$ldapmembers = $ldapgroup[$this->config->cohort_member_attribute];
-						//unset($ldapmembers['count']); // Remove oddity ;)
-						if (($this->config->memberattribute_isdn
+						unset($ldapmembers['count']); // Remove oddity ;)
+						if ($this->config->debug_mode){$trace->output(var_dump($ldapmembers));}
+				c
+                        if (($this->config->memberattribute_isdn
                                 && ($this->config->user_username !== 'dn')
                                 && ($this->config->user_username !== 'distinguishedname'))
                             || ($this->config->nested_groups)){
