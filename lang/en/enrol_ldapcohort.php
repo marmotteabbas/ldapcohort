@@ -81,6 +81,11 @@ $string['report_email_html'] = '<p>{$a->ca} cohorts have been added</p><p>{$a->c
 $string['report_email_text'] = '{$a->ca} cohorts have been added, {$a->ce} cohorts already exist; {$a->ua} new users added into cohorts, {$a->ue} users already exist.';
 $string['report_email_subject'] = 'Finished synchronizing cohorts with LDAP server';
 
+$string['memberattribute_isdn'] = 'If the group membership contains distinguised names, you need to specify it here. If it does, you also need to configure the remaining settings of this section';
+$string['memberattribute_isdn_key'] = 'Member attribute uses dn';
+$string['nested_groups'] = 'Do you want to use nested groups (groups of groups) for enrolment?';
+$string['nested_groups_key'] = 'Nested groups';
+$string['nested_groups_settings'] = 'Nested groups settings';
 
 
 $string['search_subcontexts_key'] = 'Search subcontexts';

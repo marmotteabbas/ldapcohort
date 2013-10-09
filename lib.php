@@ -150,6 +150,107 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 		return $_enabled == 1 ? true : false;
 	}
 
+    /**
+     * Find the groups a given distinguished name belongs to, both directly
+     * and indirectly via nested groups membership.
+     *
+     * @param string $memberdn distinguished name to search
+     * @return array with member groups' distinguished names (can be emtpy)
+     */
+    protected function ldap_find_user_groups($memberdn) {
+        $groups = array();
+
+        $this->ldap_find_user_groups_recursively($memberdn, $groups);
+        return $groups;
+    }
+
+    /**
+     * Recursively process the groups the given member distinguished name
+     * belongs to, adding them to the already processed groups array.
+     *
+     * @param string $memberdn distinguished name to search
+     * @param array reference &$membergroups array with already found
+     *                        groups, where we'll put the newly found
+     *                        groups.
+     */
+    protected function ldap_find_user_groups_recursively($memberdn, &$membergroups) {
+        $result = @ldap_read($this->ldapconnection, $memberdn, '(objectClass=*)', array($this->get_config('group_memberofattribute')));
+        if (!$result) {
+            return;
+        }
+
+        if ($entry = ldap_first_entry($this->ldapconnection, $result)) {
+            do {
+                $attributes = ldap_get_attributes($this->ldapconnection, $entry);
+                for ($j = 0; $j < $attributes['count']; $j++) {
+                    $groups = ldap_get_values_len($this->ldapconnection, $entry, $attributes[$j]);
+                    foreach ($groups as $key => $group) {
+                        if ($key === 'count') {  // Skip the entries count
+                            continue;
+                        }
+                        if(!in_array($group, $membergroups)) {
+                            // Only push and recurse if we haven't 'seen' this group before
+                            // to prevent loops (MS Active Directory allows them!!).
+                            array_push($membergroups, $group);
+                            $this->ldap_find_user_groups_recursively($group, $membergroups);
+                        }
+                    }
+                }
+            }
+            while ($entry = ldap_next_entry($this->ldapconnection, $entry));
+        }
+    }
+
+    /**
+     * Given a group name (either a RDN or a DN), get the list of users
+     * belonging to that group. If the group has nested groups, expand all
+     * the intermediate groups and return the full list of users that
+     * directly or indirectly belong to the group.
+     *
+     * @param string $group the group name to search
+     * @param string $memberattibute the attribute that holds the members of the group
+     * @return array the list of users belonging to the group. If $group
+     *         is not actually a group, returns array($group).
+     */
+    protected function ldap_explode_group($group, $memberattribute) {
+        switch ($this->get_config('user_type')) {
+            case 'ad':
+                // $group is already the distinguished name to search.
+                $dn = $group;
+
+                $result = ldap_read($this->ldapconnection, $dn, '(objectClass=*)', array('objectClass'));
+                $entry = ldap_first_entry($this->ldapconnection, $result);
+                $objectclass = ldap_get_values($this->ldapconnection, $entry, 'objectClass');
+
+                if (!in_array('group', $objectclass)) {
+                    // Not a group, so return immediately.
+                    return array($group);
+                }
+
+                $result = ldap_read($this->ldapconnection, $dn, '(objectClass=*)', array($memberattribute));
+                $entry = ldap_first_entry($this->ldapconnection, $result);
+                $members = @ldap_get_values($this->ldapconnection, $entry, $memberattribute); // Can be empty and throws a warning
+                if ($members['count'] == 0) {
+                    // There are no members in this group, return nothing.
+                    return array();
+                }
+                unset($members['count']);
+
+                $users = array();
+                foreach ($members as $member) {
+                    $group_members = $this->ldap_explode_group($member, $memberattribute);
+                    $users = array_merge($users, $group_members);
+                }
+
+                return ($users);
+                break;
+            default:
+                error_log($this->errorlogtag.get_string('explodegroupusertypenotsupported', 'enrol_ldap',
+                                                        $this->get_config('user_type_name')));
+
+                return array($group);
+        }
+    }
 
 	protected function ldap_search($contexts,$filter,$wanted_fields,$search_sub){
 	if (!$this->ldap_connect()) {
@@ -287,9 +388,46 @@ if ($this->config->debug_mode){$trace->output( $filter);}
 				continue;
 			}
 					if (!empty($ldapgroup[$this->config->cohort_member_attribute])) {
-						$membership = $ldapgroup[$this->config->cohort_member_attribute];
-						$this->sync_users($moodle_cohort, $membership,$trace);
-						$this->stamp_cohort($moodle_cohort);
+						$ldapmembers = $ldapgroup[$this->config->cohort_member_attribute];
+						unset($ldapmembers['count']); // Remove oddity ;)
+
+                            // If we have enabled nested groups, we need to expand
+                            // the groups to get the real user list. We need to do
+                            // this before dealing with 'memberattribute_isdn'.
+                            if ($this->config->nested_groups) {
+                                $users = array();
+                                foreach ($ldapmembers as $ldapmember) {
+                                    $grpusers = $this->ldap_explode_group($ldapmember,
+                                                                          this->config->cohort_member_attribute);
+
+                                    $users = array_merge($users, $grpusers);
+                                }
+                                $ldapmembers = array_unique($users); // There might be duplicates.
+                            }
+
+                            // Deal with the case where the member attribute holds distinguished names,
+                            // but only if the user attribute is not a distinguished name itself.
+                            if ($this->config->memberattribute_isdn
+                                && ($this->config->idnumber_attribute !== 'dn')
+                                && ($this->config->idnumber_attribute !== 'distinguishedname')) {
+                                // We need to retrieve the idnumber for all the users in $ldapmembers,
+                                // as the idnumber does not match their dn and we get dn's from membership.
+                                $memberidnumbers = array();
+                                foreach ($ldapmembers as $ldapmember) {
+                                    $result = ldap_read($this->ldapconnection, $ldapmember, '(objectClass=*)',
+                                                        array($this->config->idnumber_attribute));
+                                    $entry = ldap_first_entry($this->ldapconnection, $result);
+                                    $values = ldap_get_values($this->ldapconnection, $entry, $this->config->idnumber_attribute);
+                                    array_push($memberidnumbers, $values[0]);
+                                }
+
+                                $ldapmembers = $memberidnumbers;
+                            } 
+                        
+                        
+                        
+                        $this->sync_users($moodle_cohort, $ldapmembers,$trace);
+						$this->stamp_cohort($moodle_cohort,$ldapgroup[ $this->config->cohort_name][0]);
 					}
 				}
 			}
@@ -387,22 +525,38 @@ if ($this->config->debug_mode){$trace->output( $filter);}
 			}
 			global $CFG, $DB;
 			$ldapconnection = $this->ldapconnection;
+            if (!is_object($user) or !property_exists($user, 'id')) {
+                throw new coding_exception('Invalid $user parameter in sync_user_enrolments()');
+            }
+    
+            if (!property_exists($user, 'idnumber')) {
+                debugging('Invalid $user parameter in sync_user_enrolments(), missing idnumber');
+                $user = $DB->get_record('user', array('id'=>$user->id));
+            }
+    
+            // We may need a lot of memory here
+            @set_time_limit(0);
+            raise_memory_limit(MEMORY_HUGE);
 
-
-			$wanted_fields = "";//all
-
+			$wanted_fields = array();
+            foreach ($this->userfields as $field){
+            $ldap_field=$this->config->{'user_'.$field};       
+            if (!empty($lsap_field)) {
+                    array_push($wanted_fields, $ldap_field);
+                }
+            }
 			//contexts for searching cohorts
 			$contexts = explode(';', $this->config->user_contexts);
-			$user_filter = '(&('.$this->config->user_username.'=*)(|';
-			$user_filter .= '(' . $this->config->user_member_attribute . '=' . $user->username . ')';
-			$user_filter .= ')'.$this->config->user_objectclass.')';
+			$user_filter = '(&';
+			$user_filter .= '(' . $this->config->user_username . '=' . $user->username . ')';
+			$user_filter .= ')(objectClass='.$this->config->user_objectclass.'))';
 			$ldap_user=$this->ldap_search($contexts,$user_filter,$wanted_fields,$this->config->user_search_sub);
 
 			if (count($ldap_users)) {
 
 				$ldap_user = array_change_key_case($ldap_user, CASE_LOWER);
 
-				if (empty($ldap_user['uid'][0])) {
+				if (empty($ldap_user[$this->config->user_username][0])) {
 					$trace->output("\t" . get_string('err_user_empty_uid', 'enrol_ldapcohort', $ldap_user['cn'][0]));
 															continue;
 				}
@@ -437,16 +591,19 @@ if ($this->config->debug_mode){$trace->output( $filter);}
 		}
 	}
 
-	private function stamp_cohort($cohort){
+	private function stamp_cohort($cohort,$name=null){
 		global $DB;
         if (strpos($cohort->description, '<strong>[LDAP Cohort Sync]</strong>') === false) {
             $cohort->description = '<strong>[LDAP Cohort Sync]</strong> ' . date("d/m/Y H:i:s").$cohort->description; 
-            $DB->update_record('cohort', $cohort);
+            
         }else{
             $cohort->description = '<strong>[LDAP Cohort Sync]</strong> ' . date("d/m/Y H:i:s").substr($cohort->description,55); 
-            $DB->update_record('cohort', $cohort);
+            
         }
-
+        if (($name)&&(strpos($cohort->name, $name) === false)) {
+            $cohort->name = $name; 
+        }
+        $DB->update_record('cohort', $cohort);
 
 	}
 
@@ -475,18 +632,13 @@ if ($this->config->debug_mode){$trace->output( $filter);}
         }
 		//contexts for searching cohorts
 		$contexts = explode(';', $this->config->user_contexts);
-		$user_filter = '(&(|';
+		$cohort_contexts=explode(';',$this->config->cohort_contexts);
+        $user_filter = '(&(|';
+        $subgroup=array();
+        unset($uid_in['count']); // Remove oddity ;)
 		foreach ($uid_in as $uid) {
-            $pos=strpos($uid,",");
-            if ($pos === false) {
-                $user_filter .= '(' . $this->config->user_username . '=' . $uid . ')';
-            }else{
-                $uid=explode(",",$uid);
-                $user_filter .= '(' .  $uid[0] . ')';
-    
-            }
-
-		}
+            $user_filter .= '(' . $this->config->user_username . '=' . $uid . ')';
+        }
 		$user_filter.=')';
 		$user_filter .= '(objectClass='.$this->config->user_objectclass.'))';
 			$ldap_users=$this->ldap_search($contexts,$user_filter,$wanted_fields,$this->config->user_search_sub);
@@ -495,12 +647,12 @@ if ($this->config->debug_mode){$trace->output( $filter);}
 			foreach ($ldap_users as $i => $ldap_user) {
 				$ldap_user = array_change_key_case($ldap_user, CASE_LOWER);
 
-				if (empty($ldap_user['uid'][0])) {
+				if (empty($ldap_user[$this->config->user_username][0])) {
 					if ($this->config->debug_mode){$trace->output("\t" . get_string('err_user_empty_uid', 'enrol_ldapcohort', $ldap_user['cn'][0]));}
 															continue;
 				}
 
-				$moodle_user = $DB->get_record( 'user', array ( 'username' => $ldap_user['uid'][0] ) );
+				$moodle_user = $DB->get_record( 'user', array ( 'username' => $ldap_user[$this->config->user_username][0] ) );
                 if (empty($moodle_user)) {
 					if ($this->config->autocreate_users) {
 						if (false != ($userid = $this->create_user($ldap_user))) {
@@ -514,26 +666,24 @@ if ($this->config->debug_mode){$trace->output( $filter);}
 					$this->_users_existing++;
                     $update=false;
                     foreach ($this->userfields as $field){
-                                 $ldap_field=$this->config->{'user_'.$field};
-		if ((!$moodle_user->{$field})&& (isset($ldap_user[$ldap_field]))) {
-				$textlib =new textlib();
-                                if (is_array($ldap_user[$ldap_field])) {
-                                    $newval = $textlib->convert($ldap_user[$ldap_field][0], $this->config->ldapencoding, 'utf-8');
-                                } else {
-                                    $newval = $textlib->convert($ldap_user[$ldap_field], $this->config->ldapencoding, 'utf-8');
-                                }
-                                $moodle_user->{$field} = $newval;
-$update=true;
-                            }    
+                        $ldap_field=$this->config->{'user_'.$field};
+                        if ((!$moodle_user->{$field})&& (isset($ldap_user[$ldap_field]))) {
+                            $textlib =new textlib();
+                            if (is_array($ldap_user[$ldap_field])) {
+                                $newval = $textlib->convert($ldap_user[$ldap_field][0], $this->config->ldapencoding, 'utf-8');
+                            } else {
+                                $newval = $textlib->convert($ldap_user[$ldap_field], $this->config->ldapencoding, 'utf-8');
+                            }
+                            $moodle_user->{$field} = $newval;
+                            $update=true;                    //update user
+                        }    
                     }
                     if ($update) {
-                            $DB->update_record('user', $moodle_user);
+                            $DB->update_record('user', $moodle_user);                    //update user
                         }
-                    
-					
                     unset($cohort_members[$moodle_user->id]);
                     
-                    //update user
+
 				}
 
 				if (empty($moodle_user->id)) {
@@ -586,12 +736,15 @@ $update=true;
         $user = new stdClass();
         //$user->username = trim(textlib::strtolower($ldap_user['uid'][0]));
         foreach ($this->userfields as $field){
-                $ldap_field=$this->config->{'user_'.$fields};
+                $ldap_field=$this->config->{'user_'.$field};
             if (isset($ldap_user[$ldap_field])) {
                     if (is_array($ldap_user[$ldap_field])) {
                         $newval = $textlib->convert($ldap_user[$ldap_field][0], $this->config->ldapencoding, 'utf-8');
                     } else {
                         $newval = $textlib->convert($ldap_user[$ldap_field], $this->config->ldapencoding, 'utf-8');
+                    }
+                    if ($field="username"){
+                        $newval=trim(textlib::strtolower($newval));
                     }
                     $user->{$field} = $newval;
                 }    

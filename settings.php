@@ -70,6 +70,7 @@ $cohortfields = array ('name', 'idnumber', 'description');
         $settings->add(new admin_setting_configtext('enrol_ldapcohort/cohort_contexts', get_string('cohort_contexts_key', 'enrol_ldapcohort'), get_string('cohort_contexts', 'enrol_ldapcohort'), ''));
         $settings->add(new admin_setting_configselect('enrol_ldapcohort/cohort_search_sub', get_string('search_subcontexts_key', 'enrol_ldapcohort'), get_string('cohort_search_sub', 'enrol_ldapcohort'), key($yesno), $yesno));
         $settings->add(new admin_setting_ldapcohort_trim_lower('enrol_ldapcohort/cohort_member_attribute', get_string('cohort_member_attribute_key', 'enrol_ldapcohort'), get_string('cohort_member_attribute', 'enrol_ldapcohort'), 'member', true));
+        $settings->add(new admin_setting_configselect('enrol_ldapcohort/memberattribute_isdn', get_string('memberattribute_isdn_key', 'enrol_ldapcohort'), get_string('memberattribute_isdn', 'enrol_ldapcohort'), 0, $yesno));
         $settings->add(new admin_setting_ldapcohort_trim_lower('enrol_ldapcohort/cohort_syncing_field', get_string('cohort_syncing_field_key', 'enrol_ldapcohort'), get_string('cohort_syncing_field', 'enrol_ldapcohort'), 'idnumber', true));
         foreach ($cohortfields as $field) {
             $settings->add(new admin_setting_ldapcohort_trim_lower('enrol_ldapcohort/cohort_'.$field, get_string('cohort_'.$field.'_key', 'enrol_ldapcohort'), get_string('cohort_'.$field, 'enrol_ldapcohort'), ($field == 'description' ? 'description' : ($field == 'name' ? 'cn' : '')), true));
@@ -96,5 +97,9 @@ $cohortfields = array ('name', 'idnumber', 'description');
         foreach ($userfields as $field) {
             $settings->add(new admin_setting_ldapcohort_trim_lower('enrol_ldapcohort/user_'.$field, get_string('user_'.$field.'_key', 'enrol_ldapcohort'), get_string('user_'.$field, 'enrol_ldapcohort'), ($field == 'username' ? 'uid' : ($field == 'lastname' ? 'sn' : ($field=='firstname'? 'givenName':''))) , true));
         }
+        $settings->add(new admin_setting_heading('enrol_ldapcohort_nested_groups_settings', get_string('nested_groups_settings', 'enrol_ldapcohort'), ''));
+        $options = $yesno;
+        $settings->add(new admin_setting_configselect('enrol_ldapcohort/nested_groups', get_string('nested_groups_key', 'enrol_ldapcohort'), get_string('nested_groups', 'enrol_ldapcohort'), 0, $options));
+        
     }
 }
