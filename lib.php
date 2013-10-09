@@ -149,7 +149,48 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 
 		return $_enabled == 1 ? true : false;
 	}
+    protected function ldap_check_members($ldapmembers){
+        if (!$this->ldap_connect()) {
+                        return;
+                                }
+            // If we have enabled nested groups, we need to expand
+            // the groups to get the real user list. We need to do
+            // this before dealing with 'memberattribute_isdn'.
+        if ($this->config->nested_groups) {
+            $users = array();
+            foreach ($ldapmembers as $ldapmember) {
+                $grpusers = $this->ldap_explode_group($ldapmember,
+                                                      $this->config->cohort_member_attribute);
 
+                $users = array_merge($users, $grpusers);
+            }
+            $ldapmembers = array_unique($users); // There might be duplicates.
+        }
+
+        // Deal with the case where the member attribute holds distinguished names,
+        // but only if the user attribute is not a distinguished name itself.
+        if ($this->config->memberattribute_isdn
+            && ($this->config->user_username !== 'dn')
+            && ($this->config->user_username !== 'distinguishedname')) {
+            // We need to retrieve the idnumber for all the users in $ldapmembers,
+            // as the idnumber does not match their dn and we get dn's from membership.
+            $memberidnumbers = array();
+            foreach ($ldapmembers as $ldapmember) {
+                $result = ldap_read($this->ldapconnection, $ldapmember, '(objectClass='.$this->config->user_objectclass.')',
+                                    array($this->config->user_username));
+                $entry = ldap_first_entry($this->ldapconnection, $result);
+                $values = ldap_get_values($this->ldapconnection, $entry, $this->config->user_username);
+                array_push($memberidnumbers, $values[0]);
+            }
+
+            $ldapmembers = $memberidnumbers;
+        } 
+        
+       $this->ldap_close(); 
+        return $ldapmembers;
+    
+    
+    }
     /**
      * Find the groups a given distinguished name belongs to, both directly
      * and indirectly via nested groups membership.
@@ -386,46 +427,13 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 			}
 					if (!empty($ldapgroup[$this->config->cohort_member_attribute])) {
 						$ldapmembers = $ldapgroup[$this->config->cohort_member_attribute];
-						unset($ldapmembers['count']); // Remove oddity ;)
-						if (!$this->ldap_connect()) {
-										return;
-												}
-						$ldapconnection = $this->ldapconnection;
-                            // If we have enabled nested groups, we need to expand
-                            // the groups to get the real user list. We need to do
-                            // this before dealing with 'memberattribute_isdn'.
-                            if ($this->config->nested_groups) {
-                                $users = array();
-                                foreach ($ldapmembers as $ldapmember) {
-                                    $grpusers = $this->ldap_explode_group($ldapmember,
-                                                                          $this->config->cohort_member_attribute);
-
-                                    $users = array_merge($users, $grpusers);
-                                }
-                                $ldapmembers = array_unique($users); // There might be duplicates.
-                            }
-
-                            // Deal with the case where the member attribute holds distinguished names,
-                            // but only if the user attribute is not a distinguished name itself.
-                            if ($this->config->memberattribute_isdn
+						//unset($ldapmembers['count']); // Remove oddity ;)
+						if (($this->config->memberattribute_isdn
                                 && ($this->config->user_username !== 'dn')
-                                && ($this->config->user_username !== 'distinguishedname')) {
-                                // We need to retrieve the idnumber for all the users in $ldapmembers,
-                                // as the idnumber does not match their dn and we get dn's from membership.
-                                $memberidnumbers = array();
-                                foreach ($ldapmembers as $ldapmember) {
-                                    $result = ldap_read($this->ldapconnection, $ldapmember, '(objectClass='.$this->config->user_objectclass.')',
-                                                        array($this->config->user_username));
-                                    $entry = ldap_first_entry($this->ldapconnection, $result);
-                                    $values = ldap_get_values($this->ldapconnection, $entry, $this->config->user_username);
-                                    array_push($memberidnumbers, $values[0]);
-                                }
-
-                                $ldapmembers = $memberidnumbers;
-                            } 
-                        
-                       $this->ldap_close(); 
-                        
+                                && ($this->config->user_username !== 'distinguishedname'))
+                            || ($this->config->nested_groups)){
+                            $ldapmembers=$this->ldap_check_members($ldapmembers);
+                        }                        
                         $this->sync_users($moodle_cohort, $ldapmembers,$trace);
 						$this->stamp_cohort($moodle_cohort,$ldapgroup[ $this->config->cohort_name][0]);
 					}
