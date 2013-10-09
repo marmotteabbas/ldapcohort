@@ -153,6 +153,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
         if (!$this->ldap_connect()) {
                         return;
                                 }
+        $ldapconnection=$this->ldapconnection;
             // If we have enabled nested groups, we need to expand
             // the groups to get the real user list. We need to do
             // this before dealing with 'memberattribute_isdn'.
@@ -428,7 +429,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 					if (!empty($ldapgroup[$this->config->cohort_member_attribute])) {
 						$ldapmembers = $ldapgroup[$this->config->cohort_member_attribute];
 						unset($ldapmembers['count']); // Remove oddity ;)
-						if ($this->config->debug_mode){$trace->output(var_dump($ldapmembers));}
+						if ($this->config->debug_mode){$trace->output(get_string('err_create_cohort', 'enrol_ldapcohort', $ldapgroupname));}
 				c
                         if (($this->config->memberattribute_isdn
                                 && ($this->config->user_username !== 'dn')
