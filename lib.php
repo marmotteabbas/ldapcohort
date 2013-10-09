@@ -632,7 +632,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 		}
        */
 		if (empty($uid_in)) {
-			continue;
+			return false ;
 		}
 		$trace->output(get_string('cohort_sync_users', 'enrol_ldapcohort'), 4);
 		global $CFG, $DB;
