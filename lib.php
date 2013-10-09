@@ -364,9 +364,6 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 			}
 		$filter .= '(objectClass='.$this->config->cohort_objectclass.'))';
         
-        
-if ($this->config->debug_mode){$trace->output( $filter);}
-
 
 	$flat_results=$this->ldap_search($contexts,$filter,$wanted_fields,$this->config->cohort_search_sub);
 
@@ -390,7 +387,10 @@ if ($this->config->debug_mode){$trace->output( $filter);}
 					if (!empty($ldapgroup[$this->config->cohort_member_attribute])) {
 						$ldapmembers = $ldapgroup[$this->config->cohort_member_attribute];
 						unset($ldapmembers['count']); // Remove oddity ;)
-
+						if (!$this->ldap_connect()) {
+										return;
+												}
+						$ldapconnection = $this->ldapconnection;
                             // If we have enabled nested groups, we need to expand
                             // the groups to get the real user list. We need to do
                             // this before dealing with 'memberattribute_isdn'.
@@ -398,7 +398,7 @@ if ($this->config->debug_mode){$trace->output( $filter);}
                                 $users = array();
                                 foreach ($ldapmembers as $ldapmember) {
                                     $grpusers = $this->ldap_explode_group($ldapmember,
-                                                                          this->config->cohort_member_attribute);
+                                                                          $this->config->cohort_member_attribute);
 
                                     $users = array_merge($users, $grpusers);
                                 }
@@ -408,23 +408,23 @@ if ($this->config->debug_mode){$trace->output( $filter);}
                             // Deal with the case where the member attribute holds distinguished names,
                             // but only if the user attribute is not a distinguished name itself.
                             if ($this->config->memberattribute_isdn
-                                && ($this->config->idnumber_attribute !== 'dn')
-                                && ($this->config->idnumber_attribute !== 'distinguishedname')) {
+                                && ($this->config->user_username !== 'dn')
+                                && ($this->config->user_username !== 'distinguishedname')) {
                                 // We need to retrieve the idnumber for all the users in $ldapmembers,
                                 // as the idnumber does not match their dn and we get dn's from membership.
                                 $memberidnumbers = array();
                                 foreach ($ldapmembers as $ldapmember) {
-                                    $result = ldap_read($this->ldapconnection, $ldapmember, '(objectClass=*)',
-                                                        array($this->config->idnumber_attribute));
+                                    $result = ldap_read($this->ldapconnection, $ldapmember, '(objectClass='.$this->config->user_objectclass.')',
+                                                        array($this->config->user_username));
                                     $entry = ldap_first_entry($this->ldapconnection, $result);
-                                    $values = ldap_get_values($this->ldapconnection, $entry, $this->config->idnumber_attribute);
+                                    $values = ldap_get_values($this->ldapconnection, $entry, $this->config->user_username);
                                     array_push($memberidnumbers, $values[0]);
                                 }
 
                                 $ldapmembers = $memberidnumbers;
                             } 
                         
-                        
+                       $this->ldap_close(); 
                         
                         $this->sync_users($moodle_cohort, $ldapmembers,$trace);
 						$this->stamp_cohort($moodle_cohort,$ldapgroup[ $this->config->cohort_name][0]);
@@ -519,12 +519,12 @@ if ($this->config->debug_mode){$trace->output( $filter);}
 		if ($this->config->login_sync) {
 			// Do not try to print anything to the output because this method is called during interactive login.
 			$trace = new error_log_progress_trace($this->errorlogtag);
-			if (!$this->ldap_connect($trace)) {
+	/*		if (!$this->ldap_connect($trace)) {
 				$trace->finished();
 				return;
 			}
-			global $CFG, $DB;
-			$ldapconnection = $this->ldapconnection;
+	 */	global $CFG, $DB;
+	//		$ldapconnection = $this->ldapconnection;
             if (!is_object($user) or !property_exists($user, 'id')) {
                 throw new coding_exception('Invalid $user parameter in sync_user_enrolments()');
             }
@@ -611,16 +611,16 @@ if ($this->config->debug_mode){$trace->output( $filter);}
 
         $cohort_members=$this->get_cohort_members($moodle_cohort->id);
 		
-        if (!$this->ldap_connect()) {
+      /*  if (!$this->ldap_connect()) {
 			return;
 		}
-
+       */
 		if (empty($uid_in)) {
 			continue;
 		}
 		$trace->output(get_string('cohort_sync_users', 'enrol_ldapcohort'), 4);
 		global $CFG, $DB;
-		$ldapconnection = $this->ldapconnection;
+	//	$ldapconnection = $this->ldapconnection;
 
 		$count = 0;
 		$wanted_fields = array();
