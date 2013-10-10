@@ -194,44 +194,48 @@ class enrol_ldapcohort_plugin extends enrol_plugin
     
     
     }
-    protected function ldap_check_members2($ldapmembers,$from){
+    protected function ldap_check_members2($ldapmembers,$from,$trace){
         $users = array();
         $groups = array();
         foreach ($ldapmembers as $ldapmember) {
             if ($ldapmember!="cn=Agalan groups fake member"){
-                $pos=strpos ($ldapmember,"group")
+                $pos=strpos ($ldapmember,"group");
                 if ($pos===false){
                     if ($this->config->memberattribute_isdn
                         && ($this->config->user_username !== 'dn')
                         && ($this->config->user_username !== 'distinguishedname')) {
                         $contexts=explode(";",$this->config->user_contexts);
-                        $pos=0;
-                        foreach ($contexts as $context){
-                            $pos=min($pos,strpos($ldapmembers, $context));
+			$pos2=strlen($ldapmember);
+			foreach ($contexts as $context){
+				$pos3=strpos($ldapmember,$context);
+				if ($pos3!==false){
+				$pos2=min($pos2,$pos3);}
                         }    
-                        if ($pos!==0){
-                            $ldapmember=substr($ldapmember,0,$pos-1);
+                        if ($pos2!==false){
+				$ldapmember=substr($ldapmember,0,$pos2-1);
                         }
-                        $pos=strpos($ldapmember,$this->config->user_username.'=');
-                        if ($pos!==false){
-                            $ldapmember=substr($ldapmember,$pos+strlen($this->config->user_username.'=');
-                        }
+                        $pos2=strpos($ldapmember,$this->config->user_username.'=');
+                        if ($pos2!==false){
+                            $ldapmember=substr($ldapmember,$pos2+strlen($this->config->user_username.'='));
+			}
                     }
                     array_push($users,$ldapmember);
                 }else{
                     //it's a group
                     if ($this->config->nested_groups) {
                         $contexts=explode(";",$this->config->cohort_contexts);
-                        $pos=0;
-                        foreach ($contexts as $context){
-                            $pos=min($pos,strpos($ldapmembers, $context));
+                        $pos2=strlen($ldapmember);
+			foreach ($contexts as $context){
+				$pos3=strpos($ldapmember,$context);
+				if ($pos3!==false){
+				$pos2=min($pos2,$pos3);}
                         }    
-                        if ($pos!==0){
-                            $ldapmember=substr($ldapmember,0,$pos-1);
+                        if ($pos2!==false){
+                            $ldapmember=substr($ldapmember,0,$pos2-1);
                         }
-                        $pos=strpos($ldapmember,$this->config->cohort_username.'=');
-                        if ($pos!==false){
-                            $ldapmember=substr($ldapmember,$pos+strlen($this->config->cohort_username.'=');
+                        $pos2=strpos($ldapmember,$this->config->cohort_username.'=');
+                        if ($pos2!==false){
+                            $ldapmember=substr($ldapmember,$pos2+strlen($this->config->cohort_username.'='));
                         }
                         array_push($groups,$ldapmember);
                     }
@@ -242,60 +246,6 @@ class enrol_ldapcohort_plugin extends enrol_plugin
         return $users;
     }    
         
-        
-        
-        
-        
-        
-        
-        
-        if (!$this->ldap_connect()) {
-                        return;
-                                }
-        $ldapconnection=$this->ldapconnection;
-            // If we have enabled nested groups, we need to expand
-            // the groups to get the real user list. We need to do
-            // this before dealing with 'memberattribute_isdn'.
-        if ($this->config->nested_groups) {
-            $users = array();
-            foreach ($ldapmembers as $ldapmember) {
-                $grpusers = $this->ldap_explode_group2($ldapmember,
-                                                      $this->config->cohort_member_attribute);
-                
-                $users = array_merge($users, $grpusers);
-            }
-            $ldapmembers = array_unique($users); // There might be duplicates.
-        }
-
-        // Deal with the case where the member attribute holds distinguished names,
-        // but only if the user attribute is not a distinguished name itself.
-        if ($this->config->memberattribute_isdn
-            && ($this->config->user_username !== 'dn')
-            && ($this->config->user_username !== 'distinguishedname')) {
-            // We need to retrieve the idnumber for all the users in $ldapmembers,
-            // as the idnumber does not match their dn and we get dn's from membership.
-            $memberidnumbers = array();
-            foreach ($ldapmembers as $ldapmember) {
-               
-                $contexts=explode(";",$this->config->user_contexts);
-                $pos=0;
-                foreach ($contexts as $context){
-                    $pos=min($pos,strpos($ldapmembers, $context));
-                }    
-                if ($pos!==0){
-                    $ldapmember=substr($ldapmember,$pos-1);
-                }
-                array_push($memberidnumbers, $ldapmember);
-            }
-
-            $ldapmembers = $memberidnumbers;
-        } 
-        
-       $this->ldap_close(); 
-        return $ldapmembers;
-    
-    
-    }
     /**
      * Find the groups a given distinguished name belongs to, both directly
      * and indirectly via nested groups membership.
@@ -471,7 +421,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
         }
     }
 
-	protected function ldap_search($type,$list=array()){
+	protected function ldap_search($type,$list=array(),$trace){
         if (!$this->ldap_connect()) {
                 return;
             }
@@ -479,8 +429,9 @@ class enrol_ldapcohort_plugin extends enrol_plugin
         $ldapconnection = $this->ldapconnection;
         $wanted_fields = array();
         foreach ($this->{$type.'fields'} as $field){
-            if (!empty($this->config->{$type.$field})) {
-                array_push($wanted_fields, $this->config->{$type.$field});
+	    $mapfield="{$type}_{$field}";	
+	    if (!empty($this->config->{$mapfield})) {
+                array_push($wanted_fields, $this->config->{$mapfield});
             }
         }
 		
@@ -496,7 +447,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
         if (empty($list)){
             if ($type=='cohort') {
                 if (!empty($this->config->filter)) {
-                    $filter = '(&('.$this->config->filter.')';
+                    $filter = "(&({$this->config->filter}')";
                 }else{
                     $filter = '(&(cn=*)';
                 }
@@ -513,7 +464,8 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                         break;
                     case 'user':
                      $filter .= '(' . $this->config->user_username . '=' . $item . ')';
-                     break;
+		     break;
+		}
             }
             $filter .= ')';
 			}
@@ -522,9 +474,6 @@ class enrol_ldapcohort_plugin extends enrol_plugin
         }else{
             $filter .= '(objectClass=*))';
         }
-
-	$flat_results=$this->ldap_search($contexts,$filter,$wanted_fields,$this->config->{$type.'_search_sub'});
-
 
 	$ldap_cookie = '';
 		foreach ($contexts as $context) {
@@ -539,7 +488,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 					ldap_control_paged_result($this->ldapconnection, $this->config->pagesize, true, $ldap_cookie);
 				}
 
-				if ($search_sub) {
+				if ($this->config->{$type.'_search_sub'}) {
 					// Use ldap_search to find first user from subtree
 					$ldap_result = @ldap_search($this->ldapconnection,
 												$context,
@@ -604,8 +553,8 @@ class enrol_ldapcohort_plugin extends enrol_plugin
         }else{
             $listcohorts=$this->cohort_get_all_cohorts();
         }
-        
-    $flat_results=$this->ldap_search('cohort',$listcohorts);
+	  
+    $flat_results=$this->ldap_search('cohort',$listcohorts,$trace);
 
 	if (count($flat_results)) {
 				foreach ($flat_results as $ldapgroup) {
@@ -632,7 +581,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                                 && ($this->config->user_username !== 'dn')
                                 && ($this->config->user_username !== 'distinguishedname'))
                             || ($this->config->nested_groups)){
-                            $ldapmembers=$this->ldap_check_members2($ldapmembers);
+                            $ldapmembers=$this->ldap_check_members2($ldapmembers,$ldapgroupname,$trace);
                         }                        
                         $this->sync_users($moodle_cohort, $ldapmembers,$trace);
 						$this->stamp_cohort($moodle_cohort,$ldapgroup[ $this->config->cohort_name][0]);
@@ -832,7 +781,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 
 		$count = 0;
 		
-        $ldap_users=$this->ldap_search('user',$uid_in);
+        $ldap_users=$this->ldap_search('user',$uid_in,$trace);
     
         if (count($ldap_users)) {
 			foreach ($ldap_users as $i => $ldap_user) {
