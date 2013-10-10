@@ -181,7 +181,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                                     array($this->config->user_username));
 		if ($result){
 			$entry = ldap_first_entry($this->ldapconnection, $result);
-                	$values = ldap_get_values($this->ldapconnection, $entry, $this->config->user_username);
+            $values = ldap_get_values($this->ldapconnection, $entry, $this->config->user_username);
 			array_push($memberidnumbers, $values[0]);
 		}
             }

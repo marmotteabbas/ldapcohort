@@ -1,14 +1,4 @@
 <?php
-if (defined('STDIN')) {
-	    fwrite(STDERR, "ERROR: This script no longer supports CLI, please use admin/cli/cron.php instead\n");
-	        exit(1);
-}
-
-// This is a fake CLI script, it is a really ugly hack which emulates
-// CLI via web interface, please do not use this hack elsewhere
-define('CLI_SCRIPT', true);
-define('WEB_CRON_EMULATED_CLI', 'defined'); // ugly ugly hack, do not use elsewhere please
-define('NO_OUTPUT_BUFFERING', true);
 
 require('../../config.php');
 require_once($CFG->libdir.'/clilib.php');
