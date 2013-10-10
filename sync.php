@@ -10,7 +10,7 @@ $CFG->debug = DEBUG_DEVELOPER;
 if (!enrol_is_enabled('ldapcohort')) {
     cli_error(get_string('pluginnotenabled', 'enrol_ldapcohort'), 2);
 }
-
+$starttime = microtime();
 /** @var enrol_ldap_plugin $enrol */
 $enrol = enrol_get_plugin('ldapcohort');
 
@@ -20,6 +20,7 @@ $trace = new text_progress_trace();
 
         $enrol->sync_cohorts($trace);
 
-
-
+$difftime = microtime_diff($starttime, microtime());
+$trace->output("Execution took ".$difftime." seconds");
+$trace->finished();
 exit(0);

@@ -448,7 +448,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 				}
 			}
 		$trace->output(get_string('synchronized_cohorts', 'enrol_ldapcohort', $this->_cohorts_added + $this->_cohorts_existing));
-	   $trace->finished();
+	   
 	}
 	private function search_cohort($ldapgroupname,$trace){
 		global $CFG, $DB;
@@ -803,7 +803,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 		$this->load_config();
 		$trace = new text_progress_trace($this->errorlogtag);
 		$this->sync_cohorts($trace);
-
+        parent::cron();
 
 		if ( (!empty($this->config->email_report_enabled) && !empty($this->config->email_report))) {
 			//send email just in case something new was added

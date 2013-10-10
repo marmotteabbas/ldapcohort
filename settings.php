@@ -3,7 +3,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 if ($ADMIN->fulltree) {
-    error_reporting(E_ALL);
+    /*error_reporting(E_ALL);
     $__do = optional_param('__do', null, PARAM_ALPHA);
     
     if (null !== $__do && $__do == 'ldapcohortsync') {
@@ -15,10 +15,10 @@ if ($ADMIN->fulltree) {
 		
 		exit(0);
     }
-    
+    */
     require_once(dirname(__FILE__) . '/settingslib.php');
     
-    $run_sync = '<a target="_blank" href="' . $CFG->wwwroot . '/admin/settings.php?section=enrolsettingsldapcohort&amp;__do=ldapcohortsync"><strong style="font-size: 110%">' . get_string('here', 'enrol_ldapcohort') . '</strong></a>';
+    $run_sync = '<a target="_blank" href="' . $CFG->wwwroot . '/enrol/ldapcohort/sync.php"><strong style="font-size: 110%">' . get_string('here', 'enrol_ldapcohort') . '</strong></a>';
     
     //--- heading ---
     $settings->add(new admin_setting_heading('enrol_ldapcohort_settings', '', get_string('pluginname_desc', 'enrol_ldapcohort', $run_sync)));
