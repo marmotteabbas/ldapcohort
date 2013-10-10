@@ -204,42 +204,46 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                     if ($this->config->memberattribute_isdn
                         && ($this->config->user_username !== 'dn')
                         && ($this->config->user_username !== 'distinguishedname')) {
-                        $contexts=explode(";",$this->config->user_contexts);
-			$pos2=strlen($ldapmember);
-			foreach ($contexts as $context){
-				$pos3=strpos($ldapmember,$context);
-				if ($pos3!==false){
-				$pos2=min($pos2,$pos3);}
-                        }    
-                        if ($pos2!==false){
-				$ldapmember=substr($ldapmember,0,$pos2-1);
-                        }
                         $pos2=strpos($ldapmember,$this->config->user_username.'=');
                         if ($pos2!==false){
-                            $ldapmember=substr($ldapmember,$pos2+strlen($this->config->user_username.'='));
+			        $contexts=explode(";",$this->config->user_contexts);
+				$pos3=strlen($ldapmember);
+				foreach ($contexts as $context){
+					$pos4=strpos($ldapmember,$context);
+					if ($pos4!==false){
+						$pos3=min($pos4,$pos3);}
+                       		}    
+               			if ($pos3!==false){
+					$len=strlen($this->config->user_username.'=');
+					$ldapmember=substr($ldapmember,$pos2+$len,$pos3-$len-1);
+				}else{
+					$ldapmember=substr($ldapmember,$pos2+$len);
+				}
 			}
-                    }
-                    array_push($users,$ldapmember);
+		    }
+		    array_push($users,$ldapmember);
                 }else{
                     //it's a group
-                    if ($this->config->nested_groups) {
-                        $contexts=explode(";",$this->config->cohort_contexts);
-                        $pos2=strlen($ldapmember);
-			foreach ($contexts as $context){
-				$pos3=strpos($ldapmember,$context);
-				if ($pos3!==false){
-				$pos2=min($pos2,$pos3);}
-                        }    
+			if ($this->config->nested_groups) {
+                        $pos2=strpos($ldapmember,$this->config->{'cohort_'.$this->config->cohort_syncing_field}.'=');
                         if ($pos2!==false){
-                            $ldapmember=substr($ldapmember,0,$pos2-1);
-                        }
-                        $pos2=strpos($ldapmember,$this->config->cohort_username.'=');
-                        if ($pos2!==false){
-                            $ldapmember=substr($ldapmember,$pos2+strlen($this->config->cohort_username.'='));
-                        }
-                        array_push($groups,$ldapmember);
-                    }
-                }
+			        $contexts=explode(";",$this->config->cohort_contexts);
+				$pos3=strlen($ldapmember);
+				foreach ($contexts as $context){
+					$pos4=strpos($ldapmember,$context);
+					if ($pos4!==false){
+						$pos3=min($pos4,$pos3);}
+                       		}    
+               			if ($pos3!==false){
+					$len=strlen($this->config->cohort_username.'=');
+					$ldapmember=substr($ldapmember,$pos2+$len,$pos3-$len-1);
+				}else{
+					$ldapmember=substr($ldapmember,$pos2+$len);
+				}
+			}
+		    }
+		    array_push($groups,$ldapmember);
+             }
             }
         }
         
@@ -407,7 +411,23 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                 	$users = array();
                 	foreach ($members as $member) {
                     		$group_members = $this->ldap_explode_group($member, $memberattribute);
-                   		 $users = array_merge($users, $group_members);
+				$nted_fields = array();
+				        foreach ($this->userfields as $field){
+								$ldap_field=$this->config->{'user_'.$field};       
+										if (!empty($ldap_field)) {
+											                array_push($wanted_fields, $ldap_field);
+													            }
+								        }
+						//contexts for searching cohorts
+				//		$contexts = explode(';', $this->config->user_contexts);
+				//				$user_filter = '(&(|';
+				//				        unset($uid_in['count']); // Remove oddity ;)
+				//				        		foreach ($uid_in as $uid) {
+				//				        		            $user_filter .= '(' . $this->config->user_username . '=' . $uid . ')';
+				//				        		                    }
+				//				        		                    		$user_filter.=')';
+				//				        		                    				$user_filter .= '(objectClass='.$this->config->user_objectclass.'))';
+				//				        		                    				        $ldap_users=$this->ldap_search($contexts,$user_filter,$wanted_fields,$this->config->user_search_sub);users = array_merge($users, $group_members);
                 	}
 
                 	return ($users);
@@ -459,7 +479,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                 switch ($type){
                     case 'cohort':
                         if ($item->{$this->config->cohort_syncing_field}){
-                            $filter .= '(' . $this->config->{'cohort_'.$this->config->cohort_syncing_field} . '=' . $item->{$this->config->cohort_syncing_field} . ')';
+                            $filter .= '(' . $this->config->{'cohort_'.$this->config->cohort_syncing_field} . '=' . $item. ')';
                         }
                         break;
                     case 'user':
@@ -551,7 +571,8 @@ class enrol_ldapcohort_plugin extends enrol_plugin
         if ($this->config->autocreate_cohorts) {
             $listcohorts=array();
         }else{
-            $listcohorts=$this->cohort_get_all_cohorts();
+		$listcohorts=$this->cohort_get_all_cohorts();
+
         }
 	  
     $flat_results=$this->ldap_search('cohort',$listcohorts,$trace);
