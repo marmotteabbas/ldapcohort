@@ -642,7 +642,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 		$wanted_fields = array();
         foreach ($this->userfields as $field){
 		$ldap_field=$this->config->{'user_'.$field};       
-		if (!empty($lsap_field)) {
+		if (!empty($ldap_field)) {
                 array_push($wanted_fields, $ldap_field);
             }
         }
@@ -650,7 +650,6 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 		$contexts = explode(';', $this->config->user_contexts);
 		$cohort_contexts=explode(';',$this->config->cohort_contexts);
         $user_filter = '(&(|';
-        $subgroup=array();
         unset($uid_in['count']); // Remove oddity ;)
 		foreach ($uid_in as $uid) {
             $user_filter .= '(' . $this->config->user_username . '=' . $uid . ')';
@@ -715,11 +714,11 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 				$count++;
 			}
 		}
-        foreach ($cohort_members as $userid => $user) {
+        /*foreach ($cohort_members as $userid => $user) {
 	        cohort_remove_member($moodle_cohort->id, $userid);
 	            
 	        }
-	    
+	 */    
         $trace->output(get_string('user_synchronized', 'enrol_ldapcohort', array('count' => $count, 'cohort' => $moodle_cohort->name)));
 	}
 
@@ -759,7 +758,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                     } else {
                         $newval = $textlib->convert($ldap_user[$ldap_field], $this->config->ldapencoding, 'utf-8');
                     }
-                    if ($field="username"){
+                    if ($field=="username"){
                         $newval=trim(textlib::strtolower($newval));
                     }
                     $user->{$field} = $newval;
