@@ -76,7 +76,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
         foreach ($this->cohortfields as $key => $field){
             $this->cohortfields[$key]= $this->config->{'cohort_'.$key};
         }
-        foreach (('cohort_objectclass','user_objectclass') as $objectclass){
+        foreach (array('cohort_objectclass','user_objectclass') as $objectclass){
             if (empty($this->config->{$objectclass})) {
                 // Can't send empty filter. Fix it for now and future occasions
                 $this->set_config($objectclass, '(objectClass=*)');
@@ -84,14 +84,15 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                 // Value is 'objectClass=some-string-here', so just add ()
                 // around the value (filter _must_ have them).
                 // Fix it for now and future occasions
-                $this->set_config($objectclass, '('.$this->config->{$objectclass}}.')');
-            } else if (stripos($this->config->objectclass, '(') !== 0) {
+                $this->set_config($objectclass, '('.$this->config->{$objectclass}.')');
+            } else if (stripos($this->config->{$objectclass}, '(') !== 0) {
                 // Value is 'some-string-not-starting-with-left-parentheses',
                 // which is assumed to be the objectClass matching value.
                 // So build a valid filter with it.
-                $this->set_config({$objectclass}, '(objectClass='.$this->config->{$objectclass}.')');
+                $this->set_config($objectclass, '(objectClass='.$this->config->{$objectclass}.')');
             } else {
-                // There is an additional possible value
+                 $this->set_config($objectclass, '(objectClass='.$this->config->{$objectclass}.')');
+		// There is an additional possible value
                 // '(some-string-here)', that can be used to specify any
                 // valid filter string, to select subsets of users based
                 // on any criteria. For example, we could select the users
@@ -310,26 +311,22 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                 }else{
                     $filter = '(&(cn=*)';
                 }
-            }
         }else{
             $filter = '(&(|';
             $listcohorts=$this->cohort_get_all_cohorts();
             unset($listcohorts['count']); // Remove oddity ;
             foreach ($listcohorts as $item) {
-                if ($item->{$this->config->cohort_syncing_field}){
-                            $filter .= '(' . $this->config->{'cohort_'.$this->config->cohort_syncing_field} . '=' . $item->{$this->config->cohort_syncing_field}. ')';
-                        }else{
-                            $filter .= '(' . $this->config->{'cohort_'.$this->config->cohort_syncing_field} . '=' . $item. ')';
-                            }
-                        
-        }
-            }
+if ($item->{$this->config->cohort_syncing_field}){
+                $filter .= '(' . $this->config->{'cohort_'.$this->config->cohort_syncing_field} . '=' . $item->{$this->config->cohort_syncing_field}. ')';
+}
+}
+
             $filter .= ')';
             }
       
-            $filter .= $this->config->cohort_objectClass;
+            $filter .= $this->config->cohort_objectclass;
         
-
+$trace->output($filter);
         $ldap_cookie = '';
         foreach ($contexts as $context) {
             $context = trim($context);
@@ -343,7 +340,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                     ldap_control_paged_result($this->ldapconnection, $this->config->pagesize, true, $ldap_cookie);
                 }
 
-                if ($this->config->{$search_sub}) {
+                if ($this->config->cohort_search_sub) {
                     // Use ldap_search to find first user from subtree
                     $ldap_result = @ldap_search($this->ldapconnection,
                                                 $context,
@@ -387,7 +384,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                 foreach ($flat_results as $ldapgroup) {
                     $ldapgroup = array_change_key_case($ldapgroup, CASE_LOWER);
                      $ldapgroupname = $ldapgroup[ $this->config->{'cohort_'.$this->config->cohort_syncing_field}][0];
-                    if (empty($ldapgroupname) {
+                    if (empty($ldapgroupname)) {
                         if ($this->config->debug_mode){$trace->output(get_string('err_invalid_cohort_name', 'enrol_ldapcohort',  $this->config->{'cohort_'.$this->config->cohort_syncing_field}));}
                                                                 continue;
                     }
@@ -434,7 +431,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                                                 $entry = ldap_first_entry($this->ldapconnection, $result);
                                                 $username = ldap_get_values($this->ldapconnection, $entry, $this->config->user_username);
                                                 $ldap_user=ldap_get_entries($this->ldapconnection, $entry);
-                                                $ldapmember= $username[0]);
+                                                $ldapmember= $username[0];
                                             }
                                 }
                                 $moodle_user = $DB->get_record( 'user', array ( 'username' => $ldapmember) );
@@ -562,8 +559,8 @@ class enrol_ldapcohort_plugin extends enrol_plugin
         $ldap_pagedresults = ldap_paged_results_supported($this->get_config('ldap_version'));
         $ldapconnection = $this->ldapconnection;
         $wanted_fields = array();
-        foreach ($this->userfields as $key =>  
-        if (!empty($field}) {
+        foreach ($this->userfields as $key => $field){ 
+        if (!empty($field)) {
                 array_push($wanted_fields, $field);
             }
         }
