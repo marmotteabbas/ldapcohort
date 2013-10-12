@@ -77,7 +77,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
             $this->cohortfields[$key]= $this->config->{'cohort_'.$key};
         }
         $objectclass=array('cohort_objectclass','user_objectclass');
-        for $objectclass  as $object){
+        foreach ($objectclass  as $object){
             if (empty($this->config->{$object})) {
                 // Can't send empty filter. Fix it for now and future occasions
                 $this->set_config($object, '(objectClass=*)');
@@ -92,7 +92,6 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                 // So build a valid filter with it.
                 $this->set_config($object, '(objectClass='.$this->config->{$object}.')');
             } else {
-                 $this->set_config($object, '(objectClass='.$this->config->{$object}.')');
                 // There is an additional possible value
                 // '(some-string-here)', that can be used to specify any
                 // valid filter string, to select subsets of users based
@@ -230,7 +229,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                 $dn = $group;
 
                 $result = @ldap_read($this->ldapconnection, $dn, '(objectClass=*)', array('objectClass'));
-        if ($result)
+        if ($result){
             $entry = ldap_first_entry($this->ldapconnection, $result);
                     $objectclass = ldap_get_values($this->ldapconnection, $entry, 'objectClass');
 
@@ -325,10 +324,9 @@ class enrol_ldapcohort_plugin extends enrol_plugin
             $filter .= ')';
         }
       
-            $filter .= $this->config->cohort_objectclass;
+            $filter .= $this->config->cohort_objectclass.')';
         
-        $trace->output($filter);
-        $ldap_cookie = '';
+               $ldap_cookie = '';
         foreach ($contexts as $context) {
             $context = trim($context);
             if (empty($context)) {
@@ -423,52 +421,53 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                         $ldapmembers = $ldapgroup[$this->config->cohort_member_attribute];
                         unset($ldapmembers['count']); // Remove oddity ;)
                         if (count($ldapmembers)){
-                            if ($this->config->nested_groups) {
+                                if ($this->config->nested_groups) {
                                 $users = array();
                                 foreach ($ldapmembers as $ldapmember) {
                                     $grpusers = $this->ldap_explode_group($ldapmember,
                                                                           $this->config->cohort_member_attribute);
-                    $username = ldap_get_values($this->ldapconnection, $entry, $this->config->user_username);
                                                 
                                     $users = array_merge($users, $grpusers);
                                 }
                                 $ldapmembers = array_unique($users); // There might be duplicates.
                             }
-                    
-                            // Deal with the case where the member attribute holds distinguished names,
+                       
+			    // Deal with the case where the member attribute holds distinguished names,
                             // but only if the user attribute is not a distinguished name itself.
-                                                  
+                            $count=0;                      
                             foreach ($ldapmembers as $i => $ldapmember) {
-                                if ($ldapmember="cn=Agalan groups fake member"){continue;}
-                                if ($this->config->memberattribute_isdn
+                                if ($ldapmember=="cn=Agalan groups fake member"){continue;}
+				if ($this->config->memberattribute_isdn
                                     && ($this->config->user_username !== 'dn')
                                     && ($this->config->user_username !== 'distinguishedname')) {
                                 // We need to retrieve the idnumber for all the users in $ldapmembers,
                                 // as the idnumber does not match their dn and we get dn's from membership.
                                     
                                     //it's user
-                                     $result = @ldap_read($this->ldapconnection, $ldapmember, $this->user_objectclass,
-                                                   $this->userfields);
+                                     $result = @ldap_read($this->ldapconnection, $ldapmember, $this->config->user_objectclass,array_values($this->userfields));
                                     if ($result){
                                         $entry = ldap_first_entry($this->ldapconnection, $result);
+                                      	if (!$entry){continue;}
                                         $username = ldap_get_values($this->ldapconnection, $entry, $this->config->user_username);
-                                        $ldap_user=ldap_get_entries($this->ldapconnection, $entry);
                                         $ldapmember= $username[0];
-                                    }
+					if (is_null($ldapmember)){continue;}
+				        $ldap_user=ldap_get_entries($this->ldapconnection, $result);
+                                     }else{
+					    continue;
+				    }
                                 }
-                                $moodle_user = $DB->get_record( 'user', array ( 'username' => $ldapmember) );
+				$moodle_user = $DB->get_record( 'user', array ( 'username' => $ldapmember) );
                                 if (empty($moodle_user)) {
                                     if ($this->config->autocreate_users) {
                                         if (!isset($ldap_user)){
-                                            $result = @ldap_read($this->ldapconnection, $ldapmember, $this->user_objectclass,
-                                                               $this->userfields);
+                                            $result = @ldap_read($this->ldapconnection, $ldapmember, $this->config->user_objectclass,array_values($this->userfields));
                                             if ($result){
                                                 $entry = ldap_first_entry($this->ldapconnection, $result);
-                                                $ldap_user=ldap_get_entries($this->ldapconnection, $entry);
-                                                
+                                      	        if (!$entry){continue;}
+                                                $ldap_user=ldap_get_entries($this->ldapconnection, $result);
                                             }
                                         }
-                                        if (false != ($userid = $this->create_user($ldap_user))) {
+                                        if (false != ($userid = $this->create_user($ldap_user[0]))) {
                                             $moodle_user = $DB->get_record( 'user', array ('id' => $userid) );
                                             $this->_users_added++;
                                         }

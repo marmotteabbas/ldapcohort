@@ -16,7 +16,7 @@ $starttime = microtime();
 /** @var enrol_ldap_plugin $enrol */
 $enrol = enrol_get_plugin('ldapcohort');
 
-$trace = new text_progress_trace();
+$trace = new html_progress_trace();
 
 // Update enrolments -- these handlers should autocreate cohortes if required.
 
