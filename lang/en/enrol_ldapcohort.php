@@ -81,9 +81,10 @@ $string['report_email_html'] = '<p>{$a->ca} cohorts have been added</p><p>{$a->c
 $string['report_email_text'] = '{$a->ca} cohorts have been added, {$a->ce} cohorts already exist; {$a->ua} new users added into cohorts, {$a->ue} users already exist.';
 $string['report_email_subject'] = 'Finished synchronizing cohorts with LDAP server';
 
-$string['memberattribute_isdn'] = 'If the group membership contains distinguised names, you need to specify it here. If it does, you also need to configure the remaining settings of this section';
-$string['memberattribute_isdn_key'] = 'Member attribute uses dn';
-$string['nested_groups'] = 'Do you want to use nested groups (groups of groups) for enrolment?';
+$string['memberattribute_is'] = 'If the group membership contains distinguised names, you need to specify it here. If it does, you also need to configure the remaining settings of this section';
+$string['memberattribute_is_key'] = 'Member attribute uses dn';
+$string['memberofattribute_is'] = 'If the user member of contains distinguised names, you need to specify it here. If it does, you also need to configure the remaining settings of this section';
+$string['memberofattribute_is_key'] = 'Member of attribute uses ';$string['nested_groups'] = 'Do you want to use nested groups (groups of groups) for enrolment?';
 $string['nested_groups_key'] = 'Nested groups';
 $string['nested_groups_settings'] = 'Nested groups settings';
 
@@ -113,8 +114,8 @@ $string['user_dbinsert'] = 'Inserted user {$a->name} with id {$a->id}';
 $string['user_dereference'] = 'Determines how aliases are handled during search. Select one of the following values: "No" (LDAP_DEREF_NEVER) or "Yes" (LDAP_DEREF_ALWAYS)';
 $string['user_dereference_key'] = 'Dereference aliases';
 $string['user_lookup'] = 'User lookup settings';
-$string['user_member_attribute'] = 'Group membership attribute in user entry. This denotes the user group(s) memberhsips. Usually \'member\', or \'memberUid\'';
-$string['user_member_attribute_key'] = 'User member attribute';
+$string['memberof_attribute'] = 'Group membership attribute in user entry. This denotes the user group(s) memberhsips. Usually \'member\', or \'memberUid\'';
+$string['memberof_attribute_key'] = 'User member attribute';
 $string['user_objectclass'] = 'Optional: Overrides objectClass used to name/search users on ldap_user_type. Usually you dont need to change this.';
 $string['user_search_sub'] = 'Search users from subcontexts';
 $string['user_synchronized'] = 'Synchronized {$a->count} users for cohort "{$a->cohort}"';
