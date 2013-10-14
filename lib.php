@@ -184,7 +184,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
      *                        groups.
      */
     protected function ldap_find_user_groups_recursively($memberdn, &$membergroups) {
-        $result = @ldap_read($this->ldapconnection, $memberdn, '(objectClass=*)', array($this->config->user_member_attribute));
+        $result = @ldap_read($this->ldapconnection, $memberdn, '(objectClass=*)', array($this->config->memberof_attribute));
         if (!$result) {
             return;
         }
@@ -437,7 +437,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                             $count=0;                      
                             foreach ($ldapmembers as $i => $ldapmember) {
                                 if ($ldapmember=="cn=Agalan groups fake member"){continue;}
-				if ($this->config->memberattribute_isdn
+				if (($this->config->memberattribute_is== 'dn')
                                     && ($this->config->user_username !== 'dn')
                                     && ($this->config->user_username !== 'distinguishedname')) {
                                 // We need to retrieve the idnumber for all the users in $ldapmembers,
