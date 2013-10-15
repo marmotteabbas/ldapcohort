@@ -416,7 +416,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                         if ($this->config->debug_mode){$trace->output(get_string('err_create_cohort', 'enrol_ldapcohort', $ldapgroupname));}
                         continue;
                     }
-                    $cohort_members=$this->get_cohort_members($moodle_cohort->id);
+                    $cohort_members=$this->get_cohort_members($moodle_cohort->id,'username');
                     if (!empty($ldapgroup[$this->config->cohort_member_attribute])) {
                         $ldapmembers = $ldapgroup[$this->config->cohort_member_attribute];
                         unset($ldapmembers['count']); // Remove oddity ;)
@@ -508,9 +508,9 @@ class enrol_ldapcohort_plugin extends enrol_plugin
     $this->ldap_close();   
     }
     
-    private function get_cohort_members($cohortid) {
+    private function get_cohort_members($cohortid,$field) {
         global $DB;
-        $sql = " SELECT u.id,u.username
+        $sql = " SELECT u.id,u.".$field."
                           FROM {user} u
                          JOIN {cohort_members} cm ON (cm.userid = u.id AND cm.cohortid = :cohortid)
                         WHERE u.deleted=0";
