@@ -499,83 +499,83 @@ class enrol_ldapcohort_plugin extends enrol_plugin
         return $DB->get_records_sql_menu($sql, $params);
     }
     function ldap_find_user( $username, $search_attrib,$input_attrib) {
-    if ( empty($username) || empty($search_attrib)||empty($input_attrib)) {
-        return false;
-    }
-
-    // Default return value
-    $ldap_user = false;
-    $contexts=explode(';', $this->config->user_contexts);
-    // Get all contexts and look for first matching user
-    foreach ($contexts as $context) {
-        $context = trim($context);
-        if (empty($context)) {
-            continue;
-	}
-	if ($input_attrib=='dn'){
-		$ldap_result = @ldap_read($this->ldapconnection, $username, $this->config->user_objectclass, array($search_attrib));
-	}else{
-        if ($this->config->user_search_sub) {
-            if (!$ldap_result = @ldap_search($this->ldapconnection, $context,
-                                           '(&'.$this->config->user_objectclass.'('.$input_attrib.'='.$username.'))',
-                                           array($search_attrib))) {
-                break; // Not found in this context.
-            }
-        } else {
-            $ldap_result = ldap_list($this->ldapconnection, $context,
-                                     '(&'.$this->config->user_objectclass.'('.$input_attrib.'='.$username.'))',
-                                     array($search_attrib));
+        if ( empty($username) || empty($search_attrib)||empty($input_attrib)) {
+            return false;
         }
-	}
-	if ($ldap_result){
-	$entry = ldap_first_entry($this->ldapconnection, $ldap_result);
-	if ($entry) {
-            $ldap_user = ldap_get_values($this->ldapconnection, $entry,$search_attrib);
-            break;
-	}
-	}
+    
+        // Default return value
+        $ldap_user = false;
+        if ($input_attrib=='dn'){
+            $ldap_result = @ldap_read($this->ldapconnection, $username, $this->config->user_objectclass, array($search_attrib));
+        }else{
+            $contexts=explode(';', $this->config->user_contexts);
+            // Get all contexts and look for first matching user
+            foreach ($contexts as $context) {
+                $context = trim($context);
+                if (empty($context)) {
+                    continue;
+            }
+            if ($this->config->user_search_sub) {
+                if (!$ldap_result = @ldap_search($this->ldapconnection, $context,
+                                               '(&'.$this->config->user_objectclass.'('.$input_attrib.'='.$username.'))',
+                                               array($search_attrib))) {
+                    break; // Not found in this context.
+                }
+            } else {
+                $ldap_result = ldap_list($this->ldapconnection, $context,
+                                         '(&'.$this->config->user_objectclass.'('.$input_attrib.'='.$username.'))',
+                                         array($search_attrib));
+            }
+        }
+        if ($ldap_result){
+        $entry = ldap_first_entry($this->ldapconnection, $ldap_result);
+        if ($entry) {
+                $ldap_user = ldap_get_values($this->ldapconnection, $entry,$search_attrib);
+                break;
+        }
+        }
+        }
+        return $ldap_user[0];
     }
-    return $ldap_user[0];
-}
     private function get_ldapgroup_members($ldapmembers,$from,$trace) {
-       unset($ldapmembers['count']);
+        unset($ldapmembers['count']);
         $users = array();
         $field=array_search($this->config->memberattribute_is,$this->userfields);
-	if (($this->config->memberattribute_is!='')||($this->config->nested_groups)){
-	foreach ($ldapmembers as $ldapmember) {
-		if ($ldapmember="cn=Agalan groups fake member"){continue;}
-		$trace->output(var_dump($ldapmember));
-		$pos=strpos ($ldapmember,"ou=group");
-		if ($pos!==false){
-			if ($this->config->nested_groups) {
-		                $result = @ldap_read($this->ldapconnection, $ldapmember, '(objectClass=*)',$this->cohortfields);
-                		if ($result){
-		                    	$entry = ldap_first_entry($this->ldapconnection, $result);
-                                	$members=ldap_get_values($this->ldapconnection, $entry, $this->config->cohort_member_attribute );
-                               		$group=ldap_get_values($this->ldapconnection, $entry, $this->cohortfields[$this->config->cohort_syncing_field] ); 
-					if (!in_array( $group[0],$from)){
-						array_push($from, $group[0]);
-        		                        $group_members=get_ldapgroup_members($members[0],$from,$trace);
-                        		        $users = array_merge($users, $group_members);
-					}
-                           	}
-                	}
-	    	}else{
-			if ($this->config->memberattribute_is!=''){
-				if (!$field){
-				$user = $this->ldap_find_user($ldapmember,$this->userfields['username'] ,$this->config->memberattribute_is);
-				}else{
-				$user=$ldapmember;
-				}
-			}
-			$trace->output(var_dump($user));
-			if ($user){
-                            array_push($users, $user);
+        if (($this->config->memberattribute_is!='')||($this->config->nested_groups)){
+            foreach ($ldapmembers as $ldapmember) {
+                if ($ldapmember="cn=Agalan groups fake member"){continue;}
+                $trace->output(var_dump($ldapmember));
+                $pos=strpos ($ldapmember,"ou=group");
+                if ($pos!==false){
+                    if ($this->config->nested_groups) {
+                        $result = @ldap_read($this->ldapconnection, $ldapmember, '(objectClass=*)',$this->cohortfields);
+                        if ($result){
+                                $entry = ldap_first_entry($this->ldapconnection, $result);
+                                    $members=ldap_get_values($this->ldapconnection, $entry, $this->config->cohort_member_attribute );
+                                    $group=ldap_get_values($this->ldapconnection, $entry, $this->cohortfields[$this->config->cohort_syncing_field] ); 
+                                    if (!in_array( $group[0],$from)){
+                                        array_push($from, $group[0]);
+                                        $group_members=get_ldapgroup_members($members[0],$from,$trace);
+                                        $users = array_merge($users, $group_members);
+                                    }
+                                }
+                            }
+                    }else{
+                    if ($this->config->memberattribute_is!=''){
+                        if (!$field){
+                            $user = $this->ldap_find_user($ldapmember,$this->userfields['username'] ,$this->config->memberattribute_is);
+                        }else{
+                            $user=$ldapmember;
                         }
-		   }
-	    }
-	    $ldapmembers=$users;	
-	}	
+                    }
+                    $trace->output(var_dump($user));
+                    if ($user){
+                        array_push($users, $user);
+                    }
+                   }
+            }
+            $ldapmembers=$users;	
+        }	
        return $ldapmembers;   
     }  
 
