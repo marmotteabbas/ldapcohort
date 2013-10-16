@@ -117,7 +117,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
         }
 			        
         $this->cohortclass=$objectclass;
-        if ($this->config->memberattribute_is!=''){
+        if (empty($this->config->memberattribute_is)){
             $field=array_search($this->config->memberattribute_is,$this->userfields);
         }else{
              $field=false;
@@ -437,27 +437,26 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                     
                     $ldapmembers =$ldapgroup[$this->config->cohort_member_attribute];
                     $cohort_members=$this->get_cohort_members($moodle_cohort->id,$this->user_sync_field);
-                        
-                    if ($this->config->memberattribute_is!=''){
-                        if ($this->user_sync_field!='username'){
-                        $ldapmembers = $this->get_ldapgroup_members($ldapmembers,$ldapgroupname,$trace);
+                     if (!empty($this->config->memberattribute_is)){
+                        if ($this->user_sync_field=='username'){
+                        $ldapmembers = $this->get_ldapgroup_members($ldapmembers,array($ldapgroupname),$trace);
                     }
                     }
-                    $addmembers= array_diff($ldapmembers, $cohort_members);
-                    $removemembers=array_diff( $cohort_members,$ldapmembers);
+$addmembers= array_diff($ldapmembers, $cohort_members);
+$removemembers=array_diff( $cohort_members,$ldapmembers);
+$count=0; 
                     if (count($addmembers)) {
                         //if nested...
-                        $ldapmembers = $this->get_ldapgroup_members($addmembers,$ldapgroupname,$trace);
+                        $ldapmembers = $this->get_ldapgroup_members($addmembers,array($ldapgroupname),$trace);
                         $addmembers2= array_diff($ldapmembers,$cohort_members);
                         $addmembers=array_merge($addmembers,$addmembers2);
                         $removemembers=array_diff($removemembers,$ldapmembers);
-                    
+		    } 
                     unset($addmembers['count']); // Remove oddity ;)
                         if (count($addmembers)){
                                                      
 			    // Deal with the case where the member attribute holds distinguished names,
                             // but only if the user attribute is not a distinguished name itself.
-                            $count=0;                      
                             foreach ($addmembers as $i => $ldapmember) {
                                	$moodle_user = $DB->get_record( 'user', array ( $this->user_sync_field => $ldapmember) );
                                 if (empty($moodle_user)) {
@@ -493,7 +492,8 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                                     if ($this->config->debug_mode){$trace->output("\t" . get_string('err_user_exists_in_cohort', 'enrol_ldapcohort', array ('cohort' => $moodle_cohort->name, 'user' => $ldap_user['uid'][0])));}
                                                                         }
                                 $count++;
-                            }                               
+			    }
+			}			    
                             if (count($removemembers)){    
                                 foreach ($removemembers as $userid => $user) {
                                     cohort_remove_member($moodle_cohort->id, $userid);
@@ -501,9 +501,9 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                             }   
                             $trace->output(get_string('user_synchronized', 'enrol_ldapcohort', array('count' => $count, 'cohort' => $moodle_cohort->name)));
                             $this->stamp_cohort($moodle_cohort,$ldapgroup[ $this->config->cohort_name][0]);
-                        }   
+                           
                                           
-                    }
+                    
                 }
             }
             
@@ -524,7 +524,6 @@ class enrol_ldapcohort_plugin extends enrol_plugin
         if ( empty($username) || empty($search_attrib)||empty($input_attrib)) {
             return false;
         }
-    
         // Default return value
         $ldap_user = false;
         if ($input_attrib=='dn'){
@@ -548,48 +547,48 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                                          '(&'.$this->config->user_objectclass.'('.$input_attrib.'='.$username.'))',
                                          array($search_attrib));
             }
-        }
+	    }
+	}
         if ($ldap_result){
         $entry = ldap_first_entry($this->ldapconnection, $ldap_result);
         if ($entry) {
                 $ldap_user = ldap_get_values($this->ldapconnection, $entry,$search_attrib);
-                break;
+		//break;
         }
         }
-        }
+
         return $ldap_user[0];
     }
     private function get_ldapgroup_members($ldapmembers,$from,$trace) {
-        unset($ldapmembers['count']);
         $users = array();
-        if (){
+	if (($this->config->nested_groups)||((!empty($this->config->memberattribute_is))&&($this->user_sync_field=='username'))){
            foreach ($ldapmembers as $ldapmember) {
-                if ($ldapmember="cn=Agalan groups fake member"){continue;}
-                $trace->output(var_dump($ldapmember));
+                if ($ldapmember=="cn=Agalan groups fake member"){continue;}
                 $pos=strpos ($ldapmember,"ou=group");
-                if ($pos!==false){
-                    if ($this->config->nested_groups) {
-                        $result = @ldap_read($this->ldapconnection, $ldapmember, '(objectClass=*)',$this->cohortfields);
+		if ($pos!==false){
+			if ($this->config->nested_groups) {
+			$fields=array_merge (	array($this->config->cohort_member_attribute), array_values($this->cohortfields));
+			$result = @ldap_read($this->ldapconnection, $ldapmember, '(objectClass=*)',$fields);
                         if ($result){
                                 $entry = ldap_first_entry($this->ldapconnection, $result);
                                     $members=ldap_get_values($this->ldapconnection, $entry, $this->config->cohort_member_attribute );
                                     $group=ldap_get_values($this->ldapconnection, $entry, $this->cohortfields[$this->config->cohort_syncing_field] ); 
-                                    if (!in_array( $group[0],$from)){
+                                    $trace->output( var_dump($group).var_dump($members));
+				if (!in_array( $group[0],$from)){
                                         array_push($from, $group[0]);
-                                        $group_members=get_ldapgroup_members($members[0],$from,$trace);
+                                        $group_members=$this->get_ldapgroup_members($members[0],$from,$trace);
                                         $users = array_merge($users, $group_members);
                                     }
                                 }
                             }
                     }else{
-                    if ($this->config->memberattribute_is!=''){
-                        if ($$this->user_sync_field=='username'){
+			if (!empty($this->config->memberattribute_is)){
+                        if ($this->user_sync_field=='username'){
                             $user = $this->ldap_find_user($ldapmember,$this->userfields['username'] ,$this->config->memberattribute_is);
                         }else{
                             $user=$ldapmember;
-                        }
+			}
                     }
-                    $trace->output(var_dump($user));
                     if ($user){
                         array_push($users, $user);
                     }
