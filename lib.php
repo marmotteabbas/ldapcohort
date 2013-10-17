@@ -602,8 +602,6 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 	}
 
 	public function sync_user_enrolments($user) {
-
-		require_once("{$CFG->dirroot}/cohort/lib.php");
 		
 		if ($this->config->login_sync) {
 			// Do not try to print anything to the output because this method is called during interactive login.
@@ -613,6 +611,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 				return;
 			}
 			global $CFG, $DB;
+			require_once("{$CFG->dirroot}/cohort/lib.php");
 			$ldapconnection = $this->ldapconnection;
 			if (!is_object($user) or !property_exists($user, 'id')) {
 				throw new coding_exception('Invalid $user parameter in sync_user_enrolments()');
