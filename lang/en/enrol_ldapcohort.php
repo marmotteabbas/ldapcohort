@@ -77,8 +77,8 @@ $string['phpldap_noextension'] = '<em>The PHP LDAP module does not seem to be pr
 $string['pluginname'] = 'LDAP Cohort Synchronization';
 
 $string['pluginname_desc'] = '<p>You can use an LDAP server to automatically create users and put them into Moodle cohorts.</p><p>In the given LDAP path there are groups containing users. Every group will generate a cohort in Moodle.</p><p>The synchronization process will be executed within the moodle cron.</p><p>You can run it manually by clicking {$a}</p>';
-$string['report_email_html'] = '<p>{$a->ca} cohorts have been added</p><p>{$a->ce} cohorts already exist</p><p>{$a->ua} new users added into cohorts</p><p>{$a->ue} users already exist.</p>';
-$string['report_email_text'] = '{$a->ca} cohorts have been added, {$a->ce} cohorts already exist; {$a->ua} new users added into cohorts, {$a->ue} users already exist.';
+$string['report_email_html'] = '<p>{$a->ca} cohorts have been added</p><p>{$a->ce} cohorts already exist</p><p>{$a->ua} new users added into cohorts</p><p>{$a->ur} users removed into cohorts</p><p>{$a->ue} users already exist.</p>';
+$string['report_email_text'] = '{$a->ca} cohorts have been added, {$a->ce} cohorts already exist; {$a->ua} new users added into cohorts, ; {$a->ur}  users removed into cohorts {$a->ue} users already exist.';
 $string['report_email_subject'] = 'Finished synchronizing cohorts with LDAP server';
 
 $string['memberattribute_is'] = 'If the group membership contains distinguised names, you need to specify it here. If it does, you also need to configure the remaining settings of this section';
@@ -118,7 +118,7 @@ $string['memberof_attribute'] = 'Group membership attribute in user entry. This 
 $string['memberof_attribute_key'] = 'User member attribute';
 $string['user_objectclass'] = 'Optional: Overrides objectClass used to name/search users on ldap_user_type. Usually you dont need to change this.';
 $string['user_search_sub'] = 'Search users from subcontexts';
-$string['user_synchronized'] = 'Synchronized {$a->count} users for cohort "{$a->cohort}"';
+$string['user_synchronized'] = 'Synchronized {$a->count} - {$a->discount} users for cohort "{$a->cohort}"';
 $string['user_type'] = 'Select how users are stored in LDAP. This setting also specifies how login expiration, grace logins and user creation will work.';
 $string['user_type_key'] = 'User type';
 $string['version'] = 'The version of the LDAP protocol your server is using';
