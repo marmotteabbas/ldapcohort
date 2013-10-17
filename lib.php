@@ -603,6 +603,8 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 
 	public function sync_user_enrolments($user) {
 
+		require_once("{$CFG->dirroot}/cohort/lib.php");
+		
 		if ($this->config->login_sync) {
 			// Do not try to print anything to the output because this method is called during interactive login.
 			$trace = new error_log_progress_trace($this->errorlogtag);
@@ -633,7 +635,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 
 			if (count($usergroups)) {
 
-				foreach ($usergroups as $$ldapgroupname){
+				foreach ($usergroups as $ldapgroupname){
 					$pos=strpos($ldapgroupname,"=");
 					if ($pos !== false) {
 						$ldapgroupname=explode("=",$ldapgroupname);
@@ -864,3 +866,4 @@ function get_category_options()
 
 	return $options;
 }
+?>
