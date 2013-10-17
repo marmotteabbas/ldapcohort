@@ -442,9 +442,9 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                         $ldapmembers = $this->get_ldapgroup_members($ldapmembers,array($ldapgroupname),$trace);
                     }
                     }
-$addmembers= array_diff($ldapmembers, $cohort_members);
-$removemembers=array_diff( $cohort_members,$ldapmembers);
-$count=0; 
+                    $addmembers= array_diff($ldapmembers, $cohort_members);
+                    $removemembers=array_diff( $cohort_members,$ldapmembers);
+                    $count=0; 
                     if (count($addmembers)) {
                         //if nested...
                         $ldapmembers = $this->get_ldapgroup_members($addmembers,array($ldapgroupname),$trace);
@@ -561,7 +561,7 @@ $count=0;
     }
     private function get_ldapgroup_members($ldapmembers,$from,$trace) {
         $users = array();
-	if (($this->config->nested_groups)||((!empty($this->config->memberattribute_is))&&($this->user_sync_field=='username'))){
+        if (($this->config->nested_groups)||((!empty($this->config->memberattribute_is))&&($this->user_sync_field=='username'))){
            foreach ($ldapmembers as $ldapmember) {
                 if ($ldapmember=="cn=Agalan groups fake member"){continue;}
                 $pos=strpos ($ldapmember,"ou=group");
@@ -576,7 +576,7 @@ $count=0;
                                     $trace->output( var_dump($group).var_dump($members));
 				if (!in_array( $group[0],$from)){
                                         array_push($from, $group[0]);
-                                        $group_members=$this->get_ldapgroup_members($members[0],$from,$trace);
+                                        $group_members=$this->get_ldapgroup_members($members,$from,$trace);
                                         $users = array_merge($users, $group_members);
                                     }
                                 }
