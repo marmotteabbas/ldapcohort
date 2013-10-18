@@ -504,40 +504,48 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 		}
 		return $ldap_user;
 	}
+	
+	/**
+	 * Given a group name (either a RDN or a DN), get the list of users
+	 * belonging to that group. If the group has nested groups, expand all
+	 * the intermediate groups and return the full list of users that
+	 * directly or indirectly belong to the group.
+	 *
+	 * 
+	 * @return array the list of users belonging to the group. If $group
+	 *         is not actually a group, returns array($group).
+	 */
 	private function get_ldapgroup_members($ldapmembers,$from) {
 		$users = array();
 		if (($this->config->nested_groups)||((!empty($this->config->memberattribute_is))&&($this->user_sync_field=='username'))){
 		   foreach ($ldapmembers as $ldapmember) {
 				if ($ldapmember=="cn=Agalan groups fake member"){continue;}
 				$pos=strpos ($ldapmember,"ou=group");
-		if ($pos!==false){
-			if ($this->config->nested_groups) {
-			$fields=array_merge (array($this->config->cohort_member_attribute), array_values($this->cohortfields));
-			$result = @ldap_read($this->ldapconnection, $ldapmember, '(objectClass=*)',$fields);
-						if ($result){
-								$entry = ldap_first_entry($this->ldapconnection, $result);
-									$members=ldap_get_values($this->ldapconnection, $entry, $this->config->cohort_member_attribute );
-									$group=ldap_get_values($this->ldapconnection, $entry, $this->cohortfields[$this->config->cohort_syncing_field] );
-				if (!in_array( $group[0],$from)){
-										array_push($from, $group[0]);
-										$group_members=$this->get_ldapgroup_members($members,$from);
-										$users = array_merge($users, $group_members);
-									}
-								}
-							}
-					}else{
-			if (!empty($this->config->memberattribute_is)){
+				if ($pos!==false){
+					if ($this->config->nested_groups) {
+						$name=$this->cohortfields[$this->config->cohort_syncing_field];
+						$fields=array_merge (array($this->config->cohort_member_attribute), $name);
+						$input=empty($this->config->memberattribute_is)?$name:$this->config->memberattribute_is;
+						$group = $this->ldap_find_user($ldapmember,$fields ,$input);
+						if (!in_array( $group[$name],$from)){
+							array_push($from, $group[$name]);
+							$group_members=$this->get_ldapgroup_members($group[$this->config->cohort_member_attribute],$from);
+							$users = array_merge($users, $group_members);
+						}
+					}
+				}else{
+					if (!empty($this->config->memberattribute_is)){
 						if ($this->user_sync_field=='username'){
-				$user = $this->ldap_find_user($ldapmember,array($this->userfields['username']) ,$this->config->memberattribute_is);
-				$user=$user?$user[$this->userfields['username']]:$user;
+							$user = $this->ldap_find_user($ldapmember,array($this->userfields['username']) ,$this->config->memberattribute_is);
+							$user=$user?$user[$this->userfields['username']]:$user;
 						}else{
 							$user=$ldapmember;
-			}
+						}
 					}
 					if ($user){
 						array_push($users, $user);
 					}
-				   }
+				}
 			}
 			$ldapmembers=$users;
 		}
