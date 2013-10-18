@@ -551,8 +551,43 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 		}
 	return $ldapmembers;
 	}
-
-	public function sync_user_enrolments($user) {
+/**
+	 * Given a user name (either a RDN or a DN), get the list of users
+	 * belonging to that group. If the group has nested groups, expand all
+	 * the intermediate groups and return the full list of users that
+	 * directly or indirectly belong to the group.
+	 *
+	 * 
+	 * @return array the list of users belonging to the group. If $group
+	 *         is not actually a group, returns array($group).
+	 */
+	private function get_user_memberof($ldapgroups,$from) {
+		$groups = array();
+		if ($this->config->nested_groups){
+		   foreach ($ldapgroups as $ldapgroup) {
+				if ($ldapgroup=="cn=Agalan groups fake member"){continue;}
+				$name=$this->cohortfields[$this->config->cohort_syncing_field];
+				$fields=array_merge (array($this->config->cohort_memberof_attribute), $name);
+				$input=empty($this->config->memberofattribute_is)?$name:$this->config->memberofattribute_is;
+				$group = $this->ldap_find_user($ldapgroup,array($this->config->memberof_attribute),$input);
+				if ($group){
+					if (count($group[$this->config->cohort_member_attribute])){
+						if (!in_array( $group[$name],$from)){
+							array_push($from, $group[$name]);
+							$group_members=$this->get_user_memberof($group[$this->config->cohort_member_attribute],$from);
+							$groups = array_merge($groups, $group_members);
+						}
+					}else{		
+						array_push($groups, $group[$name]);
+					}
+				}
+			}
+		$ldapgroups=$groups;
+		}
+	}
+	return $ldapgroups;
+	}
+git	public function sync_user_enrolments($user) {
 		
 		if ($this->config->login_sync) {
 			// Do not try to print anything to the output because this method is called during interactive login.
