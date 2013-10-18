@@ -602,21 +602,18 @@ git	public function sync_user_enrolments($user) {
 			if (!is_object($user) or !property_exists($user, 'id')) {
 				throw new coding_exception('Invalid $user parameter in sync_user_enrolments()');
 			}
-
-			if (!property_exists($user, 'idnumber')) {
-				debugging('Invalid $user parameter in sync_user_enrolments(), missing idnumber');
-				$user = $DB->get_record('user', array('id'=>$user->id));
-			}
-
+			
 			// We may need a lot of memory here
 			@set_time_limit(0);
 			raise_memory_limit(MEMORY_HUGE);
 
-			if (!($dn = $this->ldap_find_userdn($user->username))) {
-					exit;
-				}
-			$usergroups = $this->ldap_find_user_groups($dn);
-
+			$field=array_search('dn',$this->userfields);
+			$field=$field?$field:'username';
+			
+			$usergroups = $this->ldap_find_user($user->{$field},array($this->config->memberof_attribute),$this->userfields[$field]);
+			if ($this->config->nested_groups){
+				$usergroups=$this->ge_user_memberof($usergroups,$user->{$field});
+			}
 
 			if (count($usergroups)) {
 
