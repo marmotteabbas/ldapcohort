@@ -230,62 +230,6 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 		}
 	}
 
-	/**
-	 * Given a group name (either a RDN or a DN), get the list of users
-	 * belonging to that group. If the group has nested groups, expand all
-	 * the intermediate groups and return the full list of users that
-	 * directly or indirectly belong to the group.
-	 *
-	 * @param string $group the group name to search
-	 * @param string $memberattibute the attribute that holds the members of the group
-	 * @return array the list of users belonging to the group. If $group
-	 *         is not actually a group, returns array($group).
-	 */
-	protected function ldap_explode_group($group, $memberattribute) {
-		switch ($this->get_config('user_type')) {
-			case 'ad':
-				// $group is already the distinguished name to search.
-				$dn = $group;
-
-				$result = @ldap_read($this->ldapconnection, $dn, '(objectClass=*)', array('objectClass'));
-		if ($result){
-			$entry = ldap_first_entry($this->ldapconnection, $result);
-					$objectclass = ldap_get_values($this->ldapconnection, $entry, 'objectClass');
-
-					if (!in_array('group', $objectclass)) {
-						// Not a group, so return immediately.
-					 return array($group);
-					}
-		}
-
-				$result = @ldap_read($this->ldapconnection, $dn, '(objectClass=*)', array($memberattribute));
-		if ($result){
-			$entry = ldap_first_entry($this->ldapconnection, $result);
-					$members = ldap_get_values($this->ldapconnection, $entry, $memberattribute); // Can be empty and throws a warning
-					if ($members['count'] == 0) {
-						// There are no members in this group, return nothing.
-					 return array();
-					}
-					unset($members['count']);
-
-					$users = array();
-					foreach ($members as $member) {
-							$group_members = $this->ldap_explode_group($member, $memberattribute);
-						 $users = array_merge($users, $group_members);
-					}
-
-					return ($users);
-		}
-				break;
-			default:
-				error_log($this->errorlogtag.get_string('explodegroupusertypenotsupported', 'enrol_ldap',
-														$this->get_config('user_type_name')));
-
-				return array($group);
-		}
-	}
-
-
 
 	public function sync_cohorts(progress_trace $trace){
 		global $CFG, $DB;
@@ -466,7 +410,6 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 				   	$moodle_user = $DB->get_record( 'user', array ( $this->user_sync_field => $ldapmember) );
 					if (empty($moodle_user)) {
 						if ($this->config->autocreate_users) {
-							$trace->output(var_dump($this->user_sync_field).var_dump($this->userfields[$this->user_sync_field]));
 							$ldap_user = $this->ldap_find_user($ldapmember,array_values($this->userfields) ,$this->userfields[$this->user_sync_field]);
 							if (isset($ldap_user)){
 								if (false != ($userid = $this->create_user($ldap_user))) {
