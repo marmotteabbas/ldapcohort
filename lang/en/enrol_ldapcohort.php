@@ -24,8 +24,8 @@ $string['bind_settings'] = 'Bind settings';
 
 $string['cohort_context'] = 'Default context for newly created cohorts';
 $string['cohort_context_key'] = 'Cohort context';
-$string['cohort_contexts'] = 'List of contexts where cohorts are located. Separate different contexts with \';\'. For example: \'ou=users,o=org; ou=others,o=org\'';
-$string['cohort_contexts_key'] = 'Contexts';
+$string['group_contexts'] = 'List of contexts where cohorts are located. Separate different contexts with \';\'. For example: \'ou=users,o=org; ou=others,o=org\'';
+$string['group_contexts_key'] = 'Contexts';
 $string['cohort_created'] = 'Cohort "{$a}" created';
 $string['cohort_description'] = 'LDAP attribute to get the cohort description from';
 $string['cohort_description_key'] = 'Cohort description';
@@ -37,11 +37,11 @@ $string['cohort_lookup'] = 'Cohort lookup settings';
 $string['cohort_name'] = 'LDAP attribute to get the cohort name from';
 $string['cohort_name_key'] = 'Cohort name';
 $string['cohort_no_users'] = 'no users found';
-$string['cohort_member_attribute'] = 'Group membership attribute in cohort entry. This denotes the attribute of the cohort which should be used to search users. Usual values: \'member\', \'uid\'';
-$string['cohort_member_attribute_key'] = 'Cohort member attribute';
+$string['group_member_attribute'] = 'Group membership attribute in cohort entry. This denotes the attribute of the cohort which should be used to search users. Usual values: \'member\', \'uid\'';
+$string['group_member_attribute_key'] = 'Cohort member attribute';
 $string['cohort_syncing_field'] = 'Cohort field to synchronzing. Usual values: \'name\', \'idnumber\'';
 $string['cohort_syncing_field_key'] = 'Cohort field to synchronzing';
-$string['cohort_search_sub'] = 'Search cohorts from subcontexts';
+$string['group_search_sub'] = 'Search cohorts from subcontexts';
 $string['cohort_sync_users'] = 'Synchronizing users...';
 $string['connectingldap'] = 'Connecting ldap...';
 
