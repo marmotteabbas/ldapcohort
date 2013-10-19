@@ -37,7 +37,7 @@ $cohortfields = array ('name'=>'cn', 'idnumber'=>'cn', 'description'=>'descripti
         $yesno = array(get_string('no'), get_string('yes'));
         
         //--- general settings ---
-        $settings->add(new admin_setting_heading('enrol_ldapcohort_general_settings', get_string('general_settings', 'enrol_ldapcohort'), ''));
+        $settings->add(new admin_setting_heading('enrol_ldapgitgeneral_settings', get_string('general_settings', 'enrol_ldapcohort'), ''));
         $options = array(0=>'cron', 1=>'login');
         $settings->add(new admin_setting_configselect('enrol_ldapcohort/login_sync', get_string('login_sync_key', 'enrol_ldapcohort'), get_string('login_sync', 'enrol_ldapcohort'), 1,$options));
         $settings->add(new admin_setting_configselect('enrol_ldapcohort/cron_enabled', get_string('cron_enabled_key', 'enrol_ldapcohort'), get_string('cron_enabled', 'enrol_ldapcohort', $run_sync), 1, $yesno));
