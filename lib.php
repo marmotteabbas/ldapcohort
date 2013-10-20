@@ -177,60 +177,6 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 		return $_enabled == 1 ? true : false;
 	}
 
-
-
-	/**
-	 * Find the groups a given distinguished name belongs to, both directly
-	 * and indirectly via nested groups membership.
-	 *
-	 * @param string $memberdn distinguished name to search
-	 * @return array with member groups' distinguished names (can be emtpy)
-	 */
-	protected function ldap_find_user_groups($memberdn) {
-		$groups = array();
-
-		$this->ldap_find_user_groups_recursively($memberdn, $groups);
-		return $groups;
-	}
-
-	/**
-	 * Recursively process the groups the given member distinguished name
-	 * belongs to, adding them to the already processed groups array.
-	 *
-	 * @param string $memberdn distinguished name to search
-	 * @param array reference &$membergroups array with already found
-	 *                        groups, where we'll put the newly found
-	 *                        groups.
-	 */
-	protected function ldap_find_user_groups_recursively($memberdn, &$membergroups) {
-		$result = @ldap_read($this->ldapconnection, $memberdn, '(objectClass=*)', array($this->config->memberof_attribute));
-		if (!$result) {
-			return;
-		}
-
-		if ($entry = ldap_first_entry($this->ldapconnection, $result)) {
-			do {
-				$attributes = ldap_get_attributes($this->ldapconnection, $entry);
-				for ($j = 0; $j < $attributes['count']; $j++) {
-					$groups = ldap_get_values_len($this->ldapconnection, $entry, $attributes[$j]);
-					foreach ($groups as $key => $group) {
-						if ($key === 'count') {  // Skip the entries count
-							continue;
-						}
-						if(!in_array($group, $membergroups)) {
-							// Only push and recurse if we haven't 'seen' this group before
-							// to prevent loops (MS Active Directory allows them!!).
-							array_push($membergroups, $group);
-							$this->ldap_find_user_groups_recursively($group, $membergroups);
-						}
-					}
-				}
-			}
-			while ($entry = ldap_next_entry($this->ldapconnection, $entry));
-		}
-	}
-
-
 	public function sync_cohorts(progress_trace $trace){
 		global $CFG, $DB;
 
@@ -464,50 +410,6 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 		$params['cohortid'] = $cohortid;
 		return $DB->get_records_sql_menu($sql, $params);
 	}
-	function ldap_find_user( $username, $search_attrib,$input_attrib,$type='user') {
-		if ( empty($username) || empty($search_attrib)||empty($input_attrib)) {
-			return false;
-		}
-		// Default return value
-		$objectclass=$type.'_objectclass';
-		$ldap_user = false;
-		if ($input_attrib=='dn'){
-			$ldap_result = @ldap_read($this->ldapconnection, $username, $this->config->{$objectclass}, $search_attrib);
-		}else{
-			$contexts=explode(';', $this->config->{$type.'_contexts'});
-			// Get all contexts and look for first matching user
-			foreach ($contexts as $context) {
-				$context = trim($context);
-				if (empty($context)) {
-					continue;
-				}
-				$pos=strpos($username,$input_attrib."=");
-				if ($pos === false) {
-					$filter =$input_attrib.'='.$username;
-				}else{
-					$filter= $username;
-				}
-				if ($this->config->{$type.'_search_sub'}) {
-					if (!$ldap_result = @ldap_search($this->ldapconnection, $context,
-												   '(&'.$this->config->{$objectclass}.'('.$filter.'))',
-												   $search_attrib)) {
-						break; // Not found in this context.
-					}
-				} else {
-					$ldap_result = ldap_list($this->ldapconnection, $context,
-											 '(&'.$this->config->{$objectclass}.'('.$filter.'))',
-											 $search_attrib);
-				}
-			}
-		}
-		if ($ldap_result){
-		$entry = ldap_first_entry($this->ldapconnection, $ldap_result);
-			if ($entry) {
-				$ldap_user = ldap_get_attributes($this->ldapconnection, $entry);
-			}
-		}
-		return $ldap_user;
-	}
 	
 	/**
 	 * Given a group name (either a RDN or a DN), get the list of users
@@ -570,7 +472,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 	 * @return array the list of users belonging to the group. If $group
 	 *         is not actually a group, returns array($group).
 	 */
-	private function get_user_memberof($memberofgroups,$from,$trace) {
+	private function get_user_memberof($memberofgroups,$from) {
 		$groups = array();
 		if ($this->config->nested_groups){
 		unset($memberofgroups['count']);
@@ -585,13 +487,12 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 					if (count($group[$this->config->memberof_attribute])){
 						if (!in_array( $group[$name][0],$from)){
 							array_push($from, $group[$name][0]);
-							$group_members=$this->get_user_memberof($group[$this->config->memberof_attribute],$from,$trace);
+							$group_members=$this->get_user_memberof($group[$this->config->memberof_attribute],$from);
 							$groups = array_merge($groups, $group_members);
 						}
 					}		
 					}
 					array_push($groups, $group[$name][0]);
-				$trace->output($group[$name][0]);
 				}
 			}
 		$memberofgroups=$groups;
@@ -623,7 +524,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 			$memberofgroups = $this->ldap_find_user($user->{$field},array($this->config->memberof_attribute),$this->userfields[$field]);
 			$memberofgroups = $memberofgroups[$this->config->memberof_attribute];
 			if ($this->config->nested_groups){
-				$memberofgroups=$this->get_user_memberof($memberofgroups,array($user->{$field}),$trace);
+				$memberofgroups=$this->get_user_memberof($memberofgroups,array($user->{$field}));
 			}
 
 			if (count($memberofgroups)) {
@@ -691,30 +592,6 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 		}
 		$DB->update_record('cohort', $cohort);
 
-	}
-
-
-	/**
-	 * Search specified contexts for the specified userid and return the
-	 * user dn like: cn=username,ou=suborg,o=org. It's actually a wrapper
-	 * around ldap_find_userdn().
-	 *
-	 * @param string $userid the userid to search for (in external LDAP encoding, no magic quotes).
-	 * @return mixed the user dn or false
-	 */
-	protected function ldap_find_userdn($userid) {
-		global $CFG;
-
-		$ldap_contexts = explode(';', $this->get_config('user_contexts'));
-		$ldap_defaults = $this->config->objectclass;
-		$contexts = explode(';', $this->config->user_contexts);
-		$user_filter = '(&('.$this->config->user_username.'=*)';
-		$user_filter .= $this->config->user_objectclass.')';
-
-
-
-		return ldap_find_userdn($this->ldapconnection, $userid, $contexts,$user_filter,
-								$this->get_config('user_username'), $this->get_config('user_search_sub'));
 	}
 	private function create_user($ldap_user)
 	{
