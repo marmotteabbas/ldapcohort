@@ -574,7 +574,6 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 			if (count($memberofgroups)) {
 
 				foreach ($memberofgroups as $memberof){
-					$trace->output($memberof);	
 					$pos=strpos($memberof,"=");
 					if ($pos !== false) {
 						$memberof=explode("=",$memberof);
