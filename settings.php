@@ -69,7 +69,7 @@ $cohortfields = array ('name'=>'cn', 'idnumber'=>'cn', 'description'=>'descripti
         $settings->add(new admin_setting_configtext('enrol_ldapcohort/group_filter', get_string('filter_key', 'enrol_ldapcohort'), get_string('filter', 'enrol_ldapcohort'), '(cn=*)'));
         $settings->add(new admin_setting_configtext('enrol_ldapcohort/group_contexts', get_string('group_contexts_key', 'enrol_ldapcohort'), get_string('group_contexts', 'enrol_ldapcohort'), ''));
         $settings->add(new admin_setting_configselect('enrol_ldapcohort/group_search_sub', get_string('search_subcontexts_key', 'enrol_ldapcohort'), get_string('group_search_sub', 'enrol_ldapcohort'), key($yesno), $yesno));
-        $settings->add(new admin_setting_ldapcohort_trim_lower('enrol_ldapcohort/group_member_attribute', get_string('group_member_attribute_key', 'enrol_ldapcohort'), get_string('group_member_attribute', 'enrol_ldapcohort'), 'member', true));
+        $settings->add(new admin_setting_ldapcohort_trim_lower('enrol_ldapcohort/group_member_attribute', get_string('group_member_attribute_key', 'enrol_ldapcohort'), get_string('group_member_attribute', 'enrol_ldapcohort'), 'member', false));
         $settings->add(new admin_setting_configtext('enrol_ldapcohort/memberattribute_is', get_string('memberattribute_is_key', 'enrol_ldapcohort'), get_string('memberattribute_is', 'enrol_ldapcohort'), 'dn'));
         $settings->add(new admin_setting_ldapcohort_trim_lower('enrol_ldapcohort/cohort_syncing_field', get_string('cohort_syncing_field_key', 'enrol_ldapcohort'), get_string('cohort_syncing_field', 'enrol_ldapcohort'), 'idnumber', true));
         foreach ($cohortfields as $key => $field) {
@@ -92,7 +92,7 @@ $cohortfields = array ('name'=>'cn', 'idnumber'=>'cn', 'description'=>'descripti
         $settings->add(new admin_setting_configselect('enrol_ldapcohort/user_deref', get_string('user_dereference_key', 'enrol_ldapcohort'), get_string('user_dereference', 'enrol_ldapcohort'), key($opt_deref), $opt_deref));
         $settings->add(new admin_setting_configtext('enrol_ldapcohort/user_contexts', get_string('user_contexts_key', 'enrol_ldapcohort'), get_string('user_contexts', 'enrol_ldapcohort'), ''));
         $settings->add(new admin_setting_configselect('enrol_ldapcohort/user_search_sub', get_string('search_subcontexts_key', 'enrol_ldapcohort'), get_string('user_search_sub', 'enrol_ldapcohort'), key($yesno), $yesno));
-        $settings->add(new admin_setting_ldapcohort_trim_lower('enrol_ldapcohort/memberof_attribute', get_string('memberof_attribute_key', 'enrol_ldapcohort'), get_string('memberof_attribute', 'enrol_ldapcohort'), 'memberUid', true));
+        $settings->add(new admin_setting_ldapcohort_trim_lower('enrol_ldapcohort/memberof_attribute', get_string('memberof_attribute_key', 'enrol_ldapcohort'), get_string('memberof_attribute', 'enrol_ldapcohort'), 'memberUid', false));
         $settings->add(new admin_setting_configtext('enrol_ldapcohort/memberofattribute_is', get_string('memberofattribute_is_key', 'enrol_ldapcohort'), get_string('memberofattribute_is', 'enrol_ldapcohort'), 'dn'));
         $settings->add(new admin_setting_configtext('enrol_ldapcohort/user_objectclass', get_string('objectclass_key', 'enrol_ldapcohort'), get_string('user_objectclass', 'enrol_ldapcohort'), ''));
         foreach ($userfields as $key =>  $field) {
