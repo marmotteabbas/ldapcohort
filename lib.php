@@ -410,6 +410,50 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 		$params['cohortid'] = $cohortid;
 		return $DB->get_records_sql_menu($sql, $params);
 	}
+	function ldap_find_user( $username, $search_attrib,$input_attrib,$type='user') {
+		if ( empty($username) || empty($search_attrib)||empty($input_attrib)) {
+			return false;
+		}
+		// Default return value
+		$objectclass=$type.'_objectclass';
+		$ldap_user = false;
+		if ($input_attrib=='dn'){
+			$ldap_result = @ldap_read($this->ldapconnection, $username, $this->config->{$objectclass}, $search_attrib);
+		}else{
+			$contexts=explode(';', $this->config->{$type.'_contexts'});
+			// Get all contexts and look for first matching user
+			foreach ($contexts as $context) {
+				$context = trim($context);
+				if (empty($context)) {
+					continue;
+				}
+				$pos=strpos($username,$input_attrib."=");
+				if ($pos === false) {
+					$filter =$input_attrib.'='.$username;
+				}else{
+					$filter= $username;
+				}
+				if ($this->config->{$type.'_search_sub'}) {
+					if (!$ldap_result = @ldap_search($this->ldapconnection, $context,
+												   '(&'.$this->config->{$objectclass}.'('.$filter.'))',
+												   $search_attrib)) {
+						break; // Not found in this context.
+					}
+				} else {
+					$ldap_result = ldap_list($this->ldapconnection, $context,
+											 '(&'.$this->config->{$objectclass}.'('.$filter.'))',
+											 $search_attrib);
+				}
+			}
+		}
+		if ($ldap_result){
+		$entry = ldap_first_entry($this->ldapconnection, $ldap_result);
+			if ($entry) {
+				$ldap_user = ldap_get_attributes($this->ldapconnection, $entry);
+			}
+		}
+		return $ldap_user;
+	}
 	
 	/**
 	 * Given a group name (either a RDN or a DN), get the list of users
