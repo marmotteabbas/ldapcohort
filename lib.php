@@ -338,60 +338,62 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 					$ldapmembers = $this->get_ldapgroup_members($ldapmembers,array($ldapgroupname));
 				}
 			}
-			$addmembers= array_diff($ldapmembers, $cohort_members);
-			$removemembers=array_diff( $cohort_members,$ldapmembers);
-			$count=0;
-			if (count($addmembers)) {
-				//if nested...
-				$ldapmembers = $this->get_ldapgroup_members($addmembers,array($ldapgroupname));
-				$addmembers2= array_diff($ldapmembers,$cohort_members);
-				$addmembers=array_merge($addmembers,$addmembers2);
-				$removemembers=array_diff($removemembers,$ldapmembers);
-			}
-			if (count($addmembers)){
-				unset($addmembers['count']);
-				// Deal with the case where the member attribute holds distinguished names,
-				// but only if the user attribute is not a distinguished name itself.
-				foreach ($addmembers as $i => $ldapmember) {
-				   	$moodle_user = $DB->get_record( 'user', array ( $this->user_sync_field => $ldapmember) );
-					if (empty($moodle_user)) {
-						if ($this->config->autocreate_users) {
-							$ldap_user = $this->ldap_find_user($ldapmember,array_values($this->userfields) ,$this->userfields[$this->user_sync_field]);
-							if (isset($ldap_user)){
-								if (false != ($userid = $this->create_user($ldap_user))) {
-									$moodle_user = $DB->get_record( 'user', array ('id' => $userid) );
-									$this->_users_added++;
-								}
-							unset($ldap_user);
-							}
-						}else{
-							continue;
-						}
-					}
-
-					if (empty($moodle_user->id)) {
-						if ($this->config->debug_mode){$trace->output("\t" . get_string('err_create_user', 'enrol_ldapcohort', $ldapmember));}
-						continue;
-					}
-
-					try {
-						cohort_add_member($moodle_cohort->id, $moodle_user->id);
-					} catch (Exception $e) {
-						if ($this->config->debug_mode){
-							$trace->output("\t" . get_string('err_user_exists_in_cohort', 'enrol_ldapcohort', array ('cohort' => $moodle_cohort->name, 'user' => $ldap_user['uid'][0])));
-						}
-					}
-					$count++;
-				}
-			}
-			$discount=0;
-			if (count($removemembers)){
-				foreach ($removemembers as $userid => $user) {
-					cohort_remove_member($moodle_cohort->id, $userid);
-					$discount++;
-					$this->_users_removed++;
-				}
-			}
+			if (count($ldapmembers)){
+                $addmembers= array_diff($ldapmembers, $cohort_members);
+                $removemembers=array_diff( $cohort_members,$ldapmembers);
+                $count=0;
+                if (count($addmembers)) {
+                    //if nested...
+                    $ldapmembers = $this->get_ldapgroup_members($addmembers,array($ldapgroupname));
+                    $addmembers2= array_diff($ldapmembers,$cohort_members);
+                    $addmembers=array_merge($addmembers,$addmembers2);
+                    $removemembers=array_diff($removemembers,$ldapmembers);
+                }
+                if (count($addmembers)){
+                    unset($addmembers['count']);
+                    // Deal with the case where the member attribute holds distinguished names,
+                    // but only if the user attribute is not a distinguished name itself.
+                    foreach ($addmembers as $i => $ldapmember) {
+                        $moodle_user = $DB->get_record( 'user', array ( $this->user_sync_field => $ldapmember) );
+                        if (empty($moodle_user)) {
+                            if ($this->config->autocreate_users) {
+                                $ldap_user = $this->ldap_find_user($ldapmember,array_values($this->userfields) ,$this->userfields[$this->user_sync_field]);
+                                if (isset($ldap_user)){
+                                    if (false != ($userid = $this->create_user($ldap_user))) {
+                                        $moodle_user = $DB->get_record( 'user', array ('id' => $userid) );
+                                        $this->_users_added++;
+                                    }
+                                unset($ldap_user);
+                                }
+                            }else{
+                                continue;
+                            }
+                        }
+    
+                        if (empty($moodle_user->id)) {
+                            if ($this->config->debug_mode){$trace->output("\t" . get_string('err_create_user', 'enrol_ldapcohort', $ldapmember));}
+                            continue;
+                        }
+    
+                        try {
+                            cohort_add_member($moodle_cohort->id, $moodle_user->id);
+                        } catch (Exception $e) {
+                            if ($this->config->debug_mode){
+                                $trace->output("\t" . get_string('err_user_exists_in_cohort', 'enrol_ldapcohort', array ('cohort' => $moodle_cohort->name, 'user' => $ldap_user['uid'][0])));
+                            }
+                        }
+                        $count++;
+                    }
+                }
+                $discount=0;
+                if (count($removemembers)){
+                    foreach ($removemembers as $userid => $user) {
+                        cohort_remove_member($moodle_cohort->id, $userid);
+                        $discount++;
+                        $this->_users_removed++;
+                    }
+                }
+            }
 			$trace->output(get_string('user_synchronized', 'enrol_ldapcohort', array('count' => $count, 'discount'=>$discount,'cohort' => $moodle_cohort->name)));
 			$this->stamp_cohort($moodle_cohort,$ldapgroup[ $this->config->cohort_name][0]);
 		}
