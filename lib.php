@@ -173,8 +173,9 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 	public function is_cron_required()
 	{
 		$_enabled = intval($this->get_config('cron_enabled'));
-
-		return $_enabled == 1 ? true : false;
+        $is_time=parent::is_cron_required();
+		$_enabled= $_enabled == 1 ? true : false;
+        return $_enabled&&$is_time;
 	}
 
 	public function sync_cohorts(progress_trace $trace){

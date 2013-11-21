@@ -1,4 +1,4 @@
 <?php
 
-$plugin->cron = 180;
-$plugin->version = 2012062101;
+$plugin->cron = 3600;
+$plugin->version = 2013112101;
