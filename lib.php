@@ -774,7 +774,7 @@ function get_category_options()
 	$parentlist = array();
 	coursecat::make_categories_list($displaylist, $parentlist, 'moodle/cohort:manage');
 	$options = array();
-	$syscontext = context_systeme::instance();
+	$syscontext = context_system::instance();
 	if (has_capability('moodle/cohort:manage', $syscontext)) {
 		$options[$syscontext->id] = $syscontext->get_context_name();
 	}
