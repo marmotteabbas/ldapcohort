@@ -389,7 +389,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                 $discount=0;
                 if (count($removemembers)){
                     foreach ($removemembers as $userid => $user) {
-                        cohort_remove_member($moodle_cohort->id, $userid);
+                        //cohort_remove_member($moodle_cohort->id, $userid);
                         $discount++;
                         $this->_users_removed++;
                     }
@@ -695,20 +695,21 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 
 	public function cron(){
 		$this->load_config();
-		$trace = new text_progress_trace($this->errorlogtag);
+		$trace = new progress_trace_buffer($this->errorlogtag);
 		$this->sync_cohorts($trace);
 		parent::cron();
 
 		if ( (!empty($this->config->email_report_enabled) && !empty($this->config->email_report))) {
 			//send email just in case something new was added
-			if ($this->_cohorts_added || $this->_users_added) {
-				$this->send_report_email();
+			if ($this->_cohorts_added || $this->_users_added||$this->_users_removed) {
+				$this->send_report_email($trace);
 			}
 		}
 		$trace->finished();
+        $trace->reset_buffer();
 	}
 
-	public function send_report_email()
+	public function send_report_email($trace)
 	{
 		global $CFG, $FULLME;
 
@@ -732,9 +733,10 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 		$mail->Subject = get_string('report_email_subject', 'enrol_ldapcohort');
 
 		$mail->WordWrap = 79;                   // set word wrap
-
-		$messagehtml = get_string('report_email_html', 'enrol_ldapcohort', array ('ca' => $this->_cohorts_added, 'ce' => $this->_cohorts_existing, 'ua' => $this->_users_added, 'ur' => $this->_users_removed,'ue' => $this->_users_existing));
+        $messagehtml = get_string('report_email_html', 'enrol_ldapcohort', array ('ca' => $this->_cohorts_added, 'ce' => $this->_cohorts_existing, 'ua' => $this->_users_added, 'ur' => $this->_users_removed,'ue' => $this->_users_existing));
 		$messagetext = get_string('report_email_text', 'enrol_ldapcohort', array ('ca' => $this->_cohorts_added, 'ce' => $this->_cohorts_existing, 'ua' => $this->_users_added, 'ur' => $this->_users_removed,'ue' => $this->_users_existing));
+		$messagehtml .= $trace->buffer;
+		$messagetext .= $trace->buffer;
 		$mail->IsHTML(true);
 		$mail->Encoding = 'quoted-printable';           // Encoding to use
 		$mail->Body    =  $messagehtml;
