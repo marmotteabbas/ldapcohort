@@ -389,12 +389,18 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                 }
                 $discount=0;
                 if (count($removemembers)){
-                    foreach ($removemembers as $userid => $user) {
-                        //cohort_remove_member($moodle_cohort->id, $userid);
-                        $discount++;
-                        $this->_users_removed++;
-                        $this->mail.=" ".$user." ";
-                        $this->stamp_cohort($moodle_cohort,$ldapgroup[ $this->config->cohort_name][0]);
+                    if ($this->config->unsubscribe_users){
+                        $this->mail.=" users unsubscribed: ";
+                        foreach ($removemembers as $userid => $user) {
+                           
+                               cohort_remove_member($moodle_cohort->id, $userid);
+                            $discount++;
+                            $this->_users_removed++;
+                            $this->mail.=" ".$user." ";
+                            $this->stamp_cohort($moodle_cohort,$ldapgroup[ $this->config->cohort_name][0]);
+                        }
+                    }else{
+                        $this->mail.=" users must be unsubscribe: ";
                     }
                 }
             }

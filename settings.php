@@ -44,6 +44,7 @@ $cohortfields = array ('name'=>'cn', 'idnumber'=>'cn', 'description'=>'descripti
         $settings->add(new admin_setting_ldapcohort_trim_lower('enrol_ldapcohort/email_report', get_string('email_report_key', 'enrol_ldapcohort'), get_string('email_report', 'enrol_ldapcohort'), '', true));
         $settings->add(new admin_setting_configcheckbox('enrol_ldapcohort/autocreate_cohorts', get_string('autocreate_cohorts_key', 'enrol_ldapcohort'), get_string('autocreate_cohorts', 'enrol_ldapcohort'), false));
         $settings->add(new admin_setting_configcheckbox('enrol_ldapcohort/autocreate_users', get_string('autocreate_users_key', 'enrol_ldapcohort'), get_string('autocreate_users', 'enrol_ldapcohort'), false));
+        $settings->add(new admin_setting_configcheckbox('enrol_ldapcohort/unsubscribe_users', get_string('unsubscribe_users_key', 'enrol_ldapcohort'), get_string('unsubscribe_users', 'enrol_ldapcohort'), false));
         $settings->add(new admin_setting_configcheckbox('enrol_ldapcohort/debug_mode', get_string('debug_mode_key', 'enrol_ldapcohort'), get_string('debug_mode', 'enrol_ldapcohort'), false));
         
         

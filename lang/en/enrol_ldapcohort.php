@@ -14,6 +14,8 @@ $string['login_sync']='Enable syncing during interactive login ';
 
 $string['autocreate_users_key']='Autocreate missing users';
 $string['autocreate_users']='if false will not create missing users ';
+$string['unsubscribe_users_key']='Unsubscribe missing users';
+$string['unsubscribe_users']='if true will  unsubscribe missing users ';
 
 
 $string['bind_dn'] = 'If you want to use a bind user to search users, specify it here. Someting like \'cn=ldapuser,ou=public,o=org\'';
