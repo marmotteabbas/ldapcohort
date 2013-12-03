@@ -20,7 +20,7 @@ $trace = new html_progress_trace();
 
 // Update enrolments -- these handlers should autocreate cohortes if required.
 
-        $enrol->sync_cohorts($trace);
+        $enrol->/sync_cohorts($trace);
 
 $difftime = microtime_diff($starttime, microtime());
 $trace->output("Execution took ".$difftime." seconds");
