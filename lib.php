@@ -566,9 +566,11 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 
             
 /// User Updates - time-consuming (optional)
-        
+       
+      
+
             // Narrow down what fields we need to update
-            $all_keys = array_keys(get_object_vars($this->config));
+            $all_keys = $this->ldap_attributes();
             $updatekeys = array();
             foreach ($all_keys as $key) {
                 if (preg_match('/^field_updatelocal_(.+)$/', $key, $match)) {
