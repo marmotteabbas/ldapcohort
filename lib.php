@@ -49,7 +49,8 @@ class enrol_ldapcohort_plugin extends enrol_plugin
         // (except the objectclass, as it's critical) because the user
         // didn't specify any values and relied on the default values
         // defined for the user type she chose.
-        $this->load_config();
+	$this->auth=get_auth_plugin($this->authtype);
+	$this->load_config();
 
         // Make sure we get sane defaults for critical values.
         $this->config->ldapencoding = $this->get_config('ldapencoding', 'utf-8');
@@ -570,69 +571,43 @@ class enrol_ldapcohort_plugin extends enrol_plugin
       
 
             // Narrow down what fields we need to update
-            $all_keys = $this->ldap_attributes();
-            $updatekeys = array();
-            foreach ($all_keys as $key) {
-                if (preg_match('/^field_updatelocal_(.+)$/', $key, $match)) {
-                    // If we have a field to update it from
-                    // and it must be updated 'onlogin' we
-                    // update it on cron
-                    if (!empty($this->config->{'field_map_'.$match[1]})
-                         and $this->config->{$match[0]} === 'onlogin') {
-                        array_push($updatekeys, $match[1]); // the actual key name
-                    }
-                }
-            }
-            unset($all_keys); unset($key);
+	$attrmaps = $this->auth->ldap_attributes();
+            $updatekeys = array_keys($attrmaps);
 
         if (!empty($updatekeys)) { // run updates only if relevant
-            $users = $DB->get_records_sql('SELECT u.username, u.id
+            $users = $DB->get_records_sql('SELECT u.username, u.id,'.implode(",",$updatekeys).' 
                                              FROM {user} u
                                             WHERE u.deleted = 0 AND u.auth = ? AND u.mnethostid = ?',
                                           array($this->authtype, $CFG->mnet_localhost_id));
             if (!empty($users)) {
-                print_string('userentriestoupdate', 'auth_ldap', count($users));
+                $trace->output(get_string('userentriestoupdate', 'auth_ldap', count($users)));
 
                 $sitecontext = context_system::instance();
                 foreach ($users as $user) {
-                    echo "\t"; print_string('auth_dbupdatinguser', 'auth_db', array('name'=>$user->username, 'id'=>$user->id));
+                    $trace->output(get_string('auth_dbupdatinguser', 'auth_db', array('name'=>$user->username, 'id'=>$user->id)));
                     // Protect the userid from being overwritten
                     $userid = $user->id;
-            
-                    if ($newinfo = $this->ldap_find_user($username,array($this->config->memberof_attribute),$updatekeys)) {
+           
+                    if ($newinfo = $this->ldap_find_user($user->username,array_values($attrmaps),$this->auth->config->user_attribute)) {
                         
-                        if (empty($updatekeys)) { // all keys? this does not support removing values
-                            $updatekeys = array_keys($newinfo);
-                        }
-            
+			    $newuser= new stdClass();
+			   $newuser->id=$userid; 
                         foreach ($updatekeys as $key) {
                             if (isset($newinfo[$key])) {
-                                $value = $newinfo[$key];
-                            } else {
-                                $value = '';
-                            }
-            
-                            if (!empty($this->config->{'field_updatelocal_' . $key})) {
-                                if ($user->{$key} != $value) { // only update if it's changed
-                                    $DB->set_field('user', $key, $value, array('id'=>$userid));
-                                }
-                            }
+                                $newuser->{$key} = $newinfo[$key];
+                            } 
                         }
-                        if (!empty($updatekeys)) {
-                            $euser = $DB->get_record('user', array('id' => $userid));
-                            events_trigger('user_updated', $euser);
-                        }
+		         user_update_user($newuser);
                     } else {
                         continue;
                     }
                     
 
-                    // Update course creators if needed
                 }
                 unset($users); // free mem
             }
         } else { // end do updates
-            print_string('noupdatestobedone', 'auth_ldap');
+            $trace->output(get_string('noupdatestobedone', 'auth_ldap'));
         }
         
         $this->ldap_close();
