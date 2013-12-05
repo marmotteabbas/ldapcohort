@@ -49,8 +49,8 @@ class enrol_ldapcohort_plugin extends enrol_plugin
         // (except the objectclass, as it's critical) because the user
         // didn't specify any values and relied on the default values
         // defined for the user type she chose.
-	$this->auth=get_auth_plugin($this->authtype);
-	$this->load_config();
+    $this->auth=get_auth_plugin($this->authtype);
+    $this->load_config();
 
         // Make sure we get sane defaults for critical values.
         $this->config->ldapencoding = $this->get_config('ldapencoding', 'utf-8');
@@ -571,7 +571,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
       
 
             // Narrow down what fields we need to update
-	$attrmaps = $this->auth->ldap_attributes();
+    $attrmaps = $this->auth->ldap_attributes();
             $updatekeys = array_keys($attrmaps);
 
         if (!empty($updatekeys)) { // run updates only if relevant
@@ -581,25 +581,35 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                                           array($this->authtype, $CFG->mnet_localhost_id));
             if (!empty($users)) {
                 $trace->output(get_string('userentriestoupdate', 'auth_ldap', count($users)));
-
                 $sitecontext = context_system::instance();
                 foreach ($users as $user) {
                     $trace->output(get_string('auth_dbupdatinguser', 'auth_db', array('name'=>$user->username, 'id'=>$user->id)));
                     // Protect the userid from being overwritten
                     $userid = $user->id;
-           
                     if ($newinfo = $this->ldap_find_user($user->username,array_values($attrmaps),$this->auth->config->user_attribute)) {
-                        
-			    $newuser= new stdClass();
-			   $newuser->id=$userid; 
+                    $newuser= new stdClass();
+                    $newuser->id=$userid; 
                         foreach ($updatekeys as $key) {
                             if (isset($newinfo[$key])) {
                                 $newuser->{$key} = $newinfo[$key];
                             } 
                         }
-		         user_update_user($newuser);
+                    user_update_user($newuser);
                     } else {
-                        continue;
+                        if ($this->config->removeuser == AUTH_REMOVEUSER_FULLDELETE) {
+                            if (delete_user($user)) {
+                                $trace->output(get_string('auth_dbdeleteuser', 'auth_db', array('name'=>$user->username, 'id'=>$user->id)));
+                            } else {
+                                $trace->output(get_string('auth_dbdeleteusererror', 'auth_db', $user->username));
+                            }
+                        } else if ($this->config->removeuser == AUTH_REMOVEUSER_SUSPEND) {
+                            $updateuser = new stdClass();
+                            $updateuser->id = $user->id;
+                            $updateuser->auth = 'nologin';
+                            user_update_user($updateuser);
+                            $trace->output(get_string('auth_dbsuspenduser', 'auth_db', array('name'=>$user->username, 'id'=>$user->id)));
+                            
+                        }
                     }
                     
 
