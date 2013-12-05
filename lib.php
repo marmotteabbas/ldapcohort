@@ -560,19 +560,16 @@ class enrol_ldapcohort_plugin extends enrol_plugin
     return $memberofgroups;
     }
     public function update_users(progress_trace $trace) {
-         global $CFG, $DB;
+         lobal $CFG, $DB;
 
         print_string('connectingldap', 'auth_ldap');
         $ldapconnection = $this->ldap_connect();
-
-            
-/// User Updates - time-consuming (optional)
-       
-      
-
-            // Narrow down what fields we need to update
-    $attrmaps = $this->auth->ldap_attributes();
-            $updatekeys = array_keys($attrmaps);
+           
+        /// User Updates - time-consuming (optional)
+ 
+        // Narrow down what fields we need to update
+        $attrmaps = $this->auth->ldap_attributes();
+        $updatekeys = array_keys($attrmaps);
 
         if (!empty($updatekeys)) { // run updates only if relevant
             $users = $DB->get_records_sql('SELECT u.username, u.id,'.implode(",",$updatekeys).' 
@@ -591,7 +588,12 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                     $updateuser->id=$userid; 
                         foreach ($updatekeys as $key) {
                             if (isset($newinfo[$key])) {
-                                $updateuser->{$key} = $newinfo[$key];
+                                if (is_array($newinfo[$key])) {
+                                    $newval = textlib::convert($newinfo[$key][0], $this->config->ldapencoding, 'utf-8');
+                                } else {
+                                    $newval = textlib::convert($newinfo[$key], $this->config->ldapencoding, 'utf-8');
+                                }
+                                $updateuser->{$key} = $newval;
                             } 
                         }
                     $DB->update_record('user', $updateuser);
