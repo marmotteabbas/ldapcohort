@@ -584,19 +584,20 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                     // Protect the userid from being overwritten
                     $userid = $user->id;
                     if ($newinfo = $this->ldap_find_user($user->username,array_values($attrmaps),$this->auth->config->user_attribute)) {
+			$newinfo=array_change_key_case($newinfo,CASE_LOWER);    
                     $updateuser= new stdClass();
                     $updateuser->id=$userid; 
-                        foreach ($updatekeys as $key) {
-                            if (isset($newinfo[$key])) {
-                                if (is_array($newinfo[$key])) {
-                                    $newval = textlib::convert($newinfo[$key][0], $this->config->ldapencoding, 'utf-8');
+                        foreach ($attrmaps as $key => $values) {
+                            if (isset($newinfo[$values])) {
+                                if (is_array($newinfo[$values])) {
+                                    $newval = textlib::convert($newinfo[$values][0], $this->config->ldapencoding, 'utf-8');
                                 } else {
-                                    $newval = textlib::convert($newinfo[$key], $this->config->ldapencoding, 'utf-8');
+                                    $newval = textlib::convert($newinfo[$values], $this->config->ldapencoding, 'utf-8');
                                 }
                                 $updateuser->{$key} = $newval;
                             } 
                         }
-                    $DB->update_record('user', $updateuser);
+		    $DB->update_record('user', $updateuser);
                     $trace->output(get_string('auth_dbsuspenduser', 'auth_db', array('name'=>$user->username, 'id'=>$user->id)));
                     $euser = $DB->get_record('user', array('id' => $user->id));
                     events_trigger('user_updated', $euser);
