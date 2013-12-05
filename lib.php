@@ -587,14 +587,17 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                     // Protect the userid from being overwritten
                     $userid = $user->id;
                     if ($newinfo = $this->ldap_find_user($user->username,array_values($attrmaps),$this->auth->config->user_attribute)) {
-                    $newuser= new stdClass();
-                    $newuser->id=$userid; 
+                    $updateuser= new stdClass();
+                    $updateuser->id=$userid; 
                         foreach ($updatekeys as $key) {
                             if (isset($newinfo[$key])) {
-                                $newuser->{$key} = $newinfo[$key];
+                                $updateuser->{$key} = $newinfo[$key];
                             } 
                         }
-                    user_update_user($newuser);
+                    $DB->update_record('user', $updateuser);
+                    $trace->output(get_string('auth_dbsuspenduser', 'auth_db', array('name'=>$user->username, 'id'=>$user->id)));
+                    $euser = $DB->get_record('user', array('id' => $user->id));
+                    events_trigger('user_updated', $euser);
                     } else {
                         if ($this->auth->config->removeuser == AUTH_REMOVEUSER_FULLDELETE) {
                             if (delete_user($user)) {
@@ -606,8 +609,10 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                             $updateuser = new stdClass();
                             $updateuser->id = $user->id;
                             $updateuser->auth = 'nologin';
-                            user_update_user($updateuser);
+                            $DB->update_record('user', $updateuser);
                             $trace->output(get_string('auth_dbsuspenduser', 'auth_db', array('name'=>$user->username, 'id'=>$user->id)));
+                            $euser = $DB->get_record('user', array('id' => $user->id));
+                            events_trigger('user_updated', $euser);
                             
                         }
                     }
