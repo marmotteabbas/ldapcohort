@@ -560,7 +560,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
     return $memberofgroups;
     }
     public function update_users(progress_trace $trace) {
-         lobal $CFG, $DB;
+        global $CFG, $DB;
 
         print_string('connectingldap', 'auth_ldap');
         $ldapconnection = $this->ldap_connect();
