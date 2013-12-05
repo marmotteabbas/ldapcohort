@@ -596,13 +596,13 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                         }
                     user_update_user($newuser);
                     } else {
-                        if ($this->config->removeuser == AUTH_REMOVEUSER_FULLDELETE) {
+                        if ($this->auth->config->removeuser == AUTH_REMOVEUSER_FULLDELETE) {
                             if (delete_user($user)) {
                                 $trace->output(get_string('auth_dbdeleteuser', 'auth_db', array('name'=>$user->username, 'id'=>$user->id)));
                             } else {
                                 $trace->output(get_string('auth_dbdeleteusererror', 'auth_db', $user->username));
                             }
-                        } else if ($this->config->removeuser == AUTH_REMOVEUSER_SUSPEND) {
+                        } else if ($this->auth->config->removeuser == AUTH_REMOVEUSER_SUSPEND) {
                             $updateuser = new stdClass();
                             $updateuser->id = $user->id;
                             $updateuser->auth = 'nologin';
