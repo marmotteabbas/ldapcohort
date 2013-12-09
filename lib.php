@@ -451,14 +451,12 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                 }
                 if ($this->config->{$type.'_search_sub'}) {
                     if (!$ldap_result = @ldap_search($this->ldapconnection, $context,
-                                                   '(&'.$this->config->{$objectclass}.'('.$filter.'))',
-                                                   $search_attrib)) {
+                                                   '(&'.$this->config->{$objectclass}.'('.$filter.'))',$search_attrib)) {
                         break; // Not found in this context.
                     }
                 } else {
                     $ldap_result = ldap_list($this->ldapconnection, $context,
-                                             '(&'.$this->config->{$objectclass}.'('.$filter.'))',
-                                             $search_attrib);
+                                             '(&'.$this->config->{$objectclass}.'('.$filter.'))',$search_attrib);
                 }
             }
         }
@@ -570,7 +568,6 @@ class enrol_ldapcohort_plugin extends enrol_plugin
         // Narrow down what fields we need to update
         $attrmaps = $this->auth->ldap_attributes();
         $updatekeys = array_keys($attrmaps);
-
         if (!empty($updatekeys)) { // run updates only if relevant
             $users = $DB->get_records_sql('SELECT u.username, u.id,'.implode(",",$updatekeys).' 
                                              FROM {user} u
@@ -582,12 +579,15 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                 foreach ($users as $user) {
                     $trace->output(get_string('auth_dbupdatinguser', 'auth_db', array('name'=>$user->username, 'id'=>$user->id)));
                     // Protect the userid from being overwritten
-                    $userid = $user->id;
-                    if ($newinfo = $this->ldap_find_user($user->username,array_values($attrmaps),$this->auth->config->user_attribute)) {
+		    $userid = $user->id;
+                    $newinfo = $this->ldap_find_user($user->username,array_values($attrmaps),$this->auth->config->user_attribute) ;
+                    if ($newinfo !=false) {
 			$newinfo=array_change_key_case($newinfo,CASE_LOWER);    
                     $updateuser= new stdClass();
+		    $trace->output(var_dump($newinfo));
                     $updateuser->id=$userid; 
                         foreach ($attrmaps as $key => $values) {
+				$trace->output(var_dump($newinfo[$values]));
                             if (isset($newinfo[$values])) {
                                 if (is_array($newinfo[$values])) {
                                     $newval = textlib::convert($newinfo[$values][0], $this->config->ldapencoding, 'utf-8');
@@ -597,10 +597,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                                 $updateuser->{$key} = $newval;
                             } 
                         }
-		    $DB->update_record('user', $updateuser);
-                    $trace->output(get_string('auth_dbsuspenduser', 'auth_db', array('name'=>$user->username, 'id'=>$user->id)));
-                    $euser = $DB->get_record('user', array('id' => $user->id));
-                    events_trigger('user_updated', $euser);
+		    user_update_user($updateuser);
                     } else {
                         if ($this->auth->config->removeuser == AUTH_REMOVEUSER_FULLDELETE) {
                             if (delete_user($user)) {
@@ -612,10 +609,8 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                             $updateuser = new stdClass();
                             $updateuser->id = $user->id;
                             $updateuser->auth = 'nologin';
-                            $DB->update_record('user', $updateuser);
+			    user_update_user($updateuser);
                             $trace->output(get_string('auth_dbsuspenduser', 'auth_db', array('name'=>$user->username, 'id'=>$user->id)));
-                            $euser = $DB->get_record('user', array('id' => $user->id));
-                            events_trigger('user_updated', $euser);
                             
                         }
                     }
