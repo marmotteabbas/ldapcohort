@@ -568,6 +568,14 @@ class enrol_ldapcohort_plugin extends enrol_plugin
         // Narrow down what fields we need to update
         $attrmaps = $this->auth->ldap_attributes();
         $updatekeys = array_keys($attrmaps);
+
+        $wanted_fields = array();
+        foreach ( $attrmaps as $key => $field){
+        if (!empty($field)) {
+                array_push($wanted_fields, $field);
+            }
+        }
+
         if (!empty($updatekeys)) { // run updates only if relevant
             $users = $DB->get_records_sql('SELECT u.username, u.id,'.implode(",",$updatekeys).' 
                                              FROM {user} u
@@ -579,8 +587,13 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                 foreach ($users as $user) {
                     $trace->output(get_string('auth_dbupdatinguser', 'auth_db', array('name'=>$user->username, 'id'=>$user->id)));
                     // Protect the userid from being overwritten
+
 		    $userid = $user->id;
                     $newinfo = $this->ldap_find_user($user->username,array_values($attrmaps),$this->auth->config->user_attribute) ;
+                    
+
+                    $userid = $user->id;
+                    $newinfo = $this->ldap_find_user($user->username,$wanted_fields,$this->auth->config->user_attribute);
                     if ($newinfo !=false) {
 			$newinfo=array_change_key_case($newinfo,CASE_LOWER);    
                     $updateuser= new stdClass();
