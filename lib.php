@@ -49,7 +49,8 @@ class enrol_ldapcohort_plugin extends enrol_plugin
         // (except the objectclass, as it's critical) because the user
         // didn't specify any values and relied on the default values
         // defined for the user type she chose.
-        $this->load_config();
+    $this->auth=get_auth_plugin($this->authtype);
+    $this->load_config();
 
         // Make sure we get sane defaults for critical values.
         $this->config->ldapencoding = $this->get_config('ldapencoding', 'utf-8');
@@ -181,8 +182,8 @@ class enrol_ldapcohort_plugin extends enrol_plugin
     public function sync_cohorts(progress_trace $trace,$mail=""){
         global $CFG, $DB;
 
-        require_once("{$CFG->dirroot}/cohort/lib.php");
-        require_once("{$CFG->dirroot}/user/lib.php");
+        require_once($CFG->dirroot."/cohort/lib.php");
+        require_once($CFG->dirroot."/user/lib.php");
 
         // we may need a lot of memory here
         @set_time_limit(0);
@@ -450,14 +451,12 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                 }
                 if ($this->config->{$type.'_search_sub'}) {
                     if (!$ldap_result = @ldap_search($this->ldapconnection, $context,
-                                                   '(&'.$this->config->{$objectclass}.'('.$filter.'))',
-                                                   $search_attrib)) {
+                                                   '(&'.$this->config->{$objectclass}.'('.$filter.'))',$search_attrib)) {
                         break; // Not found in this context.
                     }
                 } else {
                     $ldap_result = ldap_list($this->ldapconnection, $context,
-                                             '(&'.$this->config->{$objectclass}.'('.$filter.'))',
-                                             $search_attrib);
+                                             '(&'.$this->config->{$objectclass}.'('.$filter.'))',$search_attrib);
                 }
             }
         }
@@ -465,6 +464,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
         $entry = ldap_first_entry($this->ldapconnection, $ldap_result);
             if ($entry) {
                 $ldap_user = ldap_get_attributes($this->ldapconnection, $entry);
+                if (in_array('dn',$search_attrib)){ $ldap_user['dn']=ldap_get_dn($this->ldapconnection, $entry);}
             }
         }
         return $ldap_user;
@@ -558,6 +558,105 @@ class enrol_ldapcohort_plugin extends enrol_plugin
         }
     return $memberofgroups;
     }
+    public function update_users(progress_trace $trace) {
+        global $CFG, $DB;
+
+        require_once($CFG->dirroot."/user/lib.php");
+        $trace->output(get_string('connectingldap', 'auth_ldap'));
+        $ldapconnection = $this->ldap_connect();
+           
+        /// User Updates - time-consuming (optional)
+ 
+        // Narrow down what fields we need to update
+        $attrmaps = $this->auth->ldap_attributes();
+        $updatekeys = array_keys($attrmaps);
+
+        if (!empty($updatekeys)) { // run updates only if relevant
+            $users = $DB->get_records_sql('SELECT u.username, u.id,'.implode(",",$updatekeys).' 
+                                             FROM {user} u
+                                            WHERE u.deleted = 0 AND u.auth = ? AND u.mnethostid = ?',
+                                          array($this->authtype, $CFG->mnet_localhost_id));
+            if (!empty($users)) {
+                $trace->output(get_string('userentriestoupdate', 'auth_ldap', count($users)));
+                $sitecontext = context_system::instance();
+                foreach ($users as $user) {
+                    // Protect the userid from being overwritten
+                    $userid = $user->id;
+                    $newinfo = $this->ldap_find_user($user->username,array_values($attrmaps),$this->auth->config->user_attribute) ;
+                    if ($newinfo !=false) {
+                        $newinfo=array_change_key_case($newinfo,CASE_LOWER);    
+                        $updateuser= new stdClass();
+			$updateuser->id=$userid;
+		       $update=false;	
+                        foreach ($attrmaps as $key => $values) {
+				            if (isset($newinfo[$values])) {
+                                if (is_array($newinfo[$values])) {
+                                    $newval = textlib::convert($newinfo[$values][0], $this->config->ldapencoding, 'utf-8');
+                                } else {
+                                    $newval = textlib::convert($newinfo[$values], $this->config->ldapencoding, 'utf-8');
+                                }
+				if ($user->{$key}!==$newval){
+					$updateuser->{$key} = $newval;
+					$update=true;
+				}
+                            } 
+                        }
+			if ($update){
+				user_update_user($updateuser);
+                                $trace->output(get_string('auth_dbupdatinguser', 'auth_db', array('name'=>$user->username, 'id'=>$user->id)));
+			}
+                    } else {
+                        if ($this->auth->config->removeuser == AUTH_REMOVEUSER_FULLDELETE) {
+                            if (delete_user($user)) {
+                                $trace->output(get_string('auth_dbdeleteuser', 'auth_db', array('name'=>$user->username, 'id'=>$user->id)));
+                            } else {
+                                $trace->output(get_string('auth_dbdeleteusererror', 'auth_db', $user->username));
+                            }
+                        } else if ($this->auth->config->removeuser == AUTH_REMOVEUSER_SUSPEND) {
+                            $updateuser = new stdClass();
+                            $updateuser->id = $user->id;
+                            $updateuser->auth = 'nologin';
+                            user_update_user($updateuser);
+                            $trace->output(get_string('auth_dbsuspenduser', 'auth_db', array('name'=>$user->username, 'id'=>$user->id)));
+                            
+                        }
+                    }
+                    
+
+                }
+                unset($users); // free mem
+            }
+        } else { // end do updates
+            $trace->output(get_string('noupdatestobedone', 'auth_ldap'));
+        }
+        if (!empty($this->config->removeuser) and $this->config->removeuser == AUTH_REMOVEUSER_SUSPEND) {
+            $sql = "SELECT u.username, u.id,u.auth                                             FROM {user} u
+                    WHERE u.deleted = 0 AND u.auth = 'nologin' ";
+            $revive_users = $DB->get_records_sql($sql);
+
+            if (!empty($revive_users)) {
+                $trace->output(get_string('userentriestorevive', 'auth_ldap', count($revive_users)));
+
+                foreach ($revive_users as $user) {
+                    $updateuser = new stdClass();
+                    $updateuser->id = $user->id;
+                    $updateuser->auth = $this->authtype;
+                    user_update_user($updateuser);
+                    $trace->output(get_string('auth_dbreviveduser', 'auth_db', array('name'=>$user->username, 'id'=>$user->id)));
+                    
+                }
+            } else {
+                $trace->output(get_string('nouserentriestorevive', 'auth_ldap'));
+            }
+
+            unset($revive_users);
+        }
+        $this->ldap_close();
+
+        return true;
+    }
+
+
     public function sync_user_enrolments($user) {
         
         if ($this->config->login_sync) {

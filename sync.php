@@ -4,7 +4,7 @@ require('../../config.php');
 require_once($CFG->libdir.'/clilib.php');
 require_once($CFG->libdir.'/cronlib.php');
 // extra safety
-session_get_instance()->write_close();
+//session_get_instance()->write_close();
 
 // Ensure errors are well explained.
 $CFG->debug = DEBUG_DEVELOPER;
@@ -20,7 +20,10 @@ $trace = new html_progress_trace();
 
 // Update enrolments -- these handlers should autocreate cohortes if required.
 
+
         $enrol->sync_cohorts($trace);
+        $enrol->update_users($trace);
+
 
 $difftime = microtime_diff($starttime, microtime());
 $trace->output("Execution took ".$difftime." seconds");
