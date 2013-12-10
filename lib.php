@@ -570,14 +570,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
         $attrmaps = $this->auth->ldap_attributes();
         $updatekeys = array_keys($attrmaps);
 
-        $wanted_fields = array();
-        foreach ( $attrmaps as $key => $field){
-        if (!empty($field)) {
-                array_push($wanted_fields, $field);
-            }
-        }
-
-        if (!empty($updatekeys)) { // run updates only if relevant
+        $if (!empty($updatekeys)) { // run updates only if relevant
             $users = $DB->get_records_sql('SELECT u.username, u.id,'.implode(",",$updatekeys).' 
                                              FROM {user} u
                                             WHERE u.deleted = 0 AND u.auth = ? AND u.mnethostid = ?',
@@ -588,21 +581,14 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                 foreach ($users as $user) {
                     $trace->output(get_string('auth_dbupdatinguser', 'auth_db', array('name'=>$user->username, 'id'=>$user->id)));
                     // Protect the userid from being overwritten
-
-		    $userid = $user->id;
-                    $newinfo = $this->ldap_find_user($user->username,array_values($attrmaps),$this->auth->config->user_attribute) ;
-                    
-
                     $userid = $user->id;
-                    $newinfo = $this->ldap_find_user($user->username,$wanted_fields,$this->auth->config->user_attribute);
+                    $newinfo = $this->ldap_find_user($user->username,array_values($attrmaps),$this->auth->config->user_attribute) ;
                     if ($newinfo !=false) {
-			$newinfo=array_change_key_case($newinfo,CASE_LOWER);    
-                    $updateuser= new stdClass();
-		    $trace->output(var_dump($newinfo));
-                    $updateuser->id=$userid; 
+                        $newinfo=array_change_key_case($newinfo,CASE_LOWER);    
+                        $updateuser= new stdClass();
+                        $updateuser->id=$userid; 
                         foreach ($attrmaps as $key => $values) {
-				$trace->output(var_dump($newinfo[$values]));
-                            if (isset($newinfo[$values])) {
+				            if (isset($newinfo[$values])) {
                                 if (is_array($newinfo[$values])) {
                                     $newval = textlib::convert($newinfo[$values][0], $this->config->ldapencoding, 'utf-8');
                                 } else {
@@ -611,7 +597,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                                 $updateuser->{$key} = $newval;
                             } 
                         }
-		    user_update_user($updateuser);
+                        user_update_user($updateuser);
                     } else {
                         if ($this->auth->config->removeuser == AUTH_REMOVEUSER_FULLDELETE) {
                             if (delete_user($user)) {
@@ -623,7 +609,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                             $updateuser = new stdClass();
                             $updateuser->id = $user->id;
                             $updateuser->auth = 'nologin';
-			    user_update_user($updateuser);
+                            user_update_user($updateuser);
                             $trace->output(get_string('auth_dbsuspenduser', 'auth_db', array('name'=>$user->username, 'id'=>$user->id)));
                             
                         }
@@ -636,7 +622,28 @@ class enrol_ldapcohort_plugin extends enrol_plugin
         } else { // end do updates
             $trace->output(get_string('noupdatestobedone', 'auth_ldap'));
         }
-        
+        if (!empty($this->config->removeuser) and $this->config->removeuser == AUTH_REMOVEUSER_SUSPEND) {
+            $sql = "SELECT u.username, u.id,u.auth                                             FROM {user} u
+                    WHERE u.deleted = 0 AND u.auth = 'nologin' ";
+            $revive_users = $DB->get_records_sql($sql);
+
+            if (!empty($revive_users)) {
+                $trace->output(get_string('userentriestorevive', 'auth_ldap', count($revive_users)));
+
+                foreach ($revive_users as $user) {
+                    $updateuser = new stdClass();
+                    $updateuser->id = $user->id;
+                    $updateuser->auth = $this->authtype;
+                    user_update_user($updateuser);
+                    $trace->output(get_string('auth_dbreviveduser', 'auth_db', array('name'=>$user->username, 'id'=>$user->id)));
+                    
+                }
+            } else {
+                $trace->output(get_string('nouserentriestorevive', 'auth_ldap'));
+            }
+
+            unset($revive_users);
+        }
         $this->ldap_close();
 
         return true;
