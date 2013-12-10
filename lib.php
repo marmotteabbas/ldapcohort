@@ -464,6 +464,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
         $entry = ldap_first_entry($this->ldapconnection, $ldap_result);
             if ($entry) {
                 $ldap_user = ldap_get_attributes($this->ldapconnection, $entry);
+                if (in_array('dn',$search_attrib)){ $ldap_user['dn']=ldap_get_dn($this->ldapconnection, $entry);}
             }
         }
         return $ldap_user;
