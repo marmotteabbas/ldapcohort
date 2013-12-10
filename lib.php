@@ -561,7 +561,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
     public function update_users(progress_trace $trace) {
         global $CFG, $DB;
 
-        print_string('connectingldap', 'auth_ldap');
+        $trace->output(get_string(('connectingldap', 'auth_ldap')));
         $ldapconnection = $this->ldap_connect();
            
         /// User Updates - time-consuming (optional)
@@ -570,7 +570,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
         $attrmaps = $this->auth->ldap_attributes();
         $updatekeys = array_keys($attrmaps);
 
-        $if (!empty($updatekeys)) { // run updates only if relevant
+        if (!empty($updatekeys)) { // run updates only if relevant
             $users = $DB->get_records_sql('SELECT u.username, u.id,'.implode(",",$updatekeys).' 
                                              FROM {user} u
                                             WHERE u.deleted = 0 AND u.auth = ? AND u.mnethostid = ?',
