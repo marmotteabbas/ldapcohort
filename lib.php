@@ -561,7 +561,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
     public function update_users(progress_trace $trace) {
         global $CFG, $DB;
 
-        $trace->output(get_string(('connectingldap', 'auth_ldap')));
+        $trace->output(get_string('connectingldap', 'auth_ldap'));
         $ldapconnection = $this->ldap_connect();
            
         /// User Updates - time-consuming (optional)
@@ -586,7 +586,8 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                     if ($newinfo !=false) {
                         $newinfo=array_change_key_case($newinfo,CASE_LOWER);    
                         $updateuser= new stdClass();
-                        $updateuser->id=$userid; 
+			$updateuser->id=$userid;
+		       $update=false;	
                         foreach ($attrmaps as $key => $values) {
 				            if (isset($newinfo[$values])) {
                                 if (is_array($newinfo[$values])) {
@@ -594,10 +595,13 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                                 } else {
                                     $newval = textlib::convert($newinfo[$values], $this->config->ldapencoding, 'utf-8');
                                 }
-                                $updateuser->{$key} = $newval;
+				if ($user->{$key}!=$newval){
+					$updateuser->{$key} = $newval;
+					$update=true;
+				}
                             } 
                         }
-                        user_update_user($updateuser);
+                        if ($update){user_update_user($updateuser);}
                     } else {
                         if ($this->auth->config->removeuser == AUTH_REMOVEUSER_FULLDELETE) {
                             if (delete_user($user)) {
