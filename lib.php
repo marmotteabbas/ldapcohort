@@ -580,7 +580,6 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                 $trace->output(get_string('userentriestoupdate', 'auth_ldap', count($users)));
                 $sitecontext = context_system::instance();
                 foreach ($users as $user) {
-                    $trace->output(get_string('auth_dbupdatinguser', 'auth_db', array('name'=>$user->username, 'id'=>$user->id)));
                     // Protect the userid from being overwritten
                     $userid = $user->id;
                     $newinfo = $this->ldap_find_user($user->username,array_values($attrmaps),$this->auth->config->user_attribute) ;
@@ -596,13 +595,16 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                                 } else {
                                     $newval = textlib::convert($newinfo[$values], $this->config->ldapencoding, 'utf-8');
                                 }
-				if ($user->{$key}!=$newval){
+				if ($user->{$key}!==$newval){
 					$updateuser->{$key} = $newval;
 					$update=true;
 				}
                             } 
                         }
-                        if ($update){user_update_user($updateuser);}
+			if ($update){
+				user_update_user($updateuser);
+                                $trace->output(get_string('auth_dbupdatinguser', 'auth_db', array('name'=>$user->username, 'id'=>$user->id)));
+			}
                     } else {
                         if ($this->auth->config->removeuser == AUTH_REMOVEUSER_FULLDELETE) {
                             if (delete_user($user)) {
