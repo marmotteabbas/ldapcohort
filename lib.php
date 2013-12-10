@@ -182,8 +182,8 @@ class enrol_ldapcohort_plugin extends enrol_plugin
     public function sync_cohorts(progress_trace $trace,$mail=""){
         global $CFG, $DB;
 
-        require_once("{$CFG->dirroot}/cohort/lib.php");
-        require_once("{$CFG->dirroot}/user/lib.php");
+        require_once($CFG->dirroot."/cohort/lib.php");
+        require_once($CFG->dirroot."/user/lib.php");
 
         // we may need a lot of memory here
         @set_time_limit(0);
@@ -561,6 +561,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
     public function update_users(progress_trace $trace) {
         global $CFG, $DB;
 
+        require_once($CFG->dirroot."/user/lib.php");
         $trace->output(get_string('connectingldap', 'auth_ldap'));
         $ldapconnection = $this->ldap_connect();
            
