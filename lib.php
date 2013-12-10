@@ -399,10 +399,10 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                             if ($this->config->unsubscribe_users){
                                cohort_remove_member($moodle_cohort->id, $userid);
                                 $discount++;
-                                $this->_users_removed++;
                                 $this->stamp_cohort($moodle_cohort,$ldapgroup[ $this->config->cohort_name][0]);
                             }
                             $this->mail.=" ".$user." ";
+                            $this->_users_removed++;
                         }
                     
                 }
