@@ -680,7 +680,8 @@ class enrol_ldapcohort_plugin extends enrol_plugin
             $field=array_search('dn',$this->userfields);
             $field=$field?$field:'username';
             $memberofgroups = $this->ldap_find_user($user->{$field},array($this->config->memberof_attribute),$this->userfields[$field]);
-            $memberofgroups = $memberofgroups[$this->config->memberof_attribute];
+	    $memberofgroups=array_change_key_case($memberofgroups,CASE_LOWER);    
+	    $memberofgroups = $memberofgroups[$this->config->memberof_attribute];
             if ($this->config->nested_groups){
                 $memberofgroups=$this->get_user_memberof($memberofgroups,array($user->{$field}));
             }
