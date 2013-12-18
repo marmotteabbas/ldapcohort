@@ -581,13 +581,14 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                 $sitecontext = context_system::instance();
                 foreach ($users as $user) {
                     // Protect the userid from being overwritten
+                    $this->auth->->sync_roles($user);
                     $userid = $user->id;
                     $newinfo = $this->ldap_find_user($user->username,array_values($attrmaps),$this->auth->config->user_attribute) ;
                     if ($newinfo !=false) {
                         $newinfo=array_change_key_case($newinfo,CASE_LOWER);    
                         $updateuser= new stdClass();
-			$updateuser->id=$userid;
-		       $update=false;	
+                        $updateuser->id=$userid;
+                        $update=false;	
                         foreach ($attrmaps as $key => $values) {
 				            if (isset($newinfo[$values])) {
                                 if (is_array($newinfo[$values])) {
