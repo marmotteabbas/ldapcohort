@@ -179,7 +179,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
         return $_enabled&&$is_time;
     }
 
-    public function sync_cohorts(progress_trace $trace,$mail=""){
+    public function sync_cohorts(progress_trace $trace,$force_unsubscribe=FALSE){
         global $CFG, $DB;
 
         require_once($CFG->dirroot."/cohort/lib.php");
@@ -390,13 +390,13 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                 }
                 $discount=0;
                 if (count($removemembers)){
-                    if ($this->config->unsubscribe_users){
+                    if ($this->config->unsubscribe_users||$force_unsubscribe){
                         $this->mail.=" users unsubscribed: ";
                         }else{
                         $this->mail.=" users should be unsubscribe: ";
                     }
                         foreach ($removemembers as $userid => $user) {
-                            if ($this->config->unsubscribe_users){
+                            if ($this->config->unsubscribe_users||$force_unsubscribe){
                                cohort_remove_member($moodle_cohort->id, $userid);
                                 $discount++;
                                 $this->stamp_cohort($moodle_cohort,$ldapgroup[ $this->config->cohort_name][0]);
@@ -814,7 +814,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 
         if ( (!empty($this->config->email_report_enabled) && !empty($this->config->email_report))) {
             //send email just in case something new was added
-            if ($this->_cohorts_added || $this->_users_added||$this->_users_removed) {
+            if ($this->_cohorts_added || $this->_users_added||($this->_users_removed &&$this->config->unsubscribe_users)) {
                 $this->send_report_email();
             }
         }
