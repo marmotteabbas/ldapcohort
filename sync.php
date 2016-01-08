@@ -22,7 +22,7 @@ $trace = new html_progress_trace();
 
 
         $enrol->sync_cohorts($trace);
-        $enrol->update_users($trace);
+        //$enrol->update_users($trace);
 
 
 $difftime = microtime_diff($starttime, microtime());
