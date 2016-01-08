@@ -581,7 +581,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                 $sitecontext = context_system::instance();
                 foreach ($users as $user) {
                     // Protect the userid from being overwritten
-                    $this->auth->->sync_roles($user);
+                    $this->auth->sync_roles($user);
                     $userid = $user->id;
                     $newinfo = $this->ldap_find_user($user->username,array_values($attrmaps),$this->auth->config->user_attribute) ;
                     if ($newinfo !=false) {
@@ -592,9 +592,9 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                         foreach ($attrmaps as $key => $values) {
 				            if (isset($newinfo[$values])) {
                                 if (is_array($newinfo[$values])) {
-                                    $newval = textlib::convert($newinfo[$values][0], $this->config->ldapencoding, 'utf-8');
+                                    $newval = core_text::convert($newinfo[$values][0], $this->config->ldapencoding, 'utf-8');
                                 } else {
-                                    $newval = textlib::convert($newinfo[$values], $this->config->ldapencoding, 'utf-8');
+                                    $newval = core_text::convert($newinfo[$values], $this->config->ldapencoding, 'utf-8');
                                 }
 				if ($user->{$key}!==$newval){
 					$updateuser->{$key} = $newval;
@@ -660,7 +660,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 
     public function sync_user_enrolments($user) {
         
-        if ($this->config->login_sync) {
+        if (($this->config->login_sync)&&(($user->auth=="cas")||$user->auth=="ldap")) {
             // Do not try to print anything to the output because this method is called during interactive login.
             $trace = new error_log_progress_trace($this->errorlogtag);
             if (!$this->ldap_connect($trace)) {
@@ -755,19 +755,19 @@ class enrol_ldapcohort_plugin extends enrol_plugin
     private function create_user($ldap_user)
     {
         global $CFG, $DB;
-        $textlib =new textlib();
+        $core_text =new core_text();
         $user = new stdClass();
-        //$user->username = trim(textlib::strtolower($ldap_user['uid'][0]));
+        //$user->username = trim(core_text::strtolower($ldap_user['uid'][0]));
         foreach ($this->userfields as $key => $field){
 
             if (isset($ldap_user[$field])) {
                     if (is_array($ldap_user[$field])) {
-                        $newval = $textlib->convert($ldap_user[$field][0], $this->config->ldapencoding, 'utf-8');
+                        $newval = $core_text->convert($ldap_user[$field][0], $this->config->ldapencoding, 'utf-8');
                     } else {
-                        $newval = $textlib->convert($ldap_user[$field], $this->config->ldapencoding, 'utf-8');
+                        $newval = $core_text->convert($ldap_user[$field], $this->config->ldapencoding, 'utf-8');
                     }
                     if ($key=="username"){
-                        $newval=trim(textlib::strtolower($newval));
+                        $newval=trim(core_text::strtolower($newval));
                     }
                     $user->{$key} = $newval;
                 }
