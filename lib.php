@@ -228,7 +228,8 @@ class enrol_ldapcohort_plugin extends enrol_plugin
             unset($listcohorts['count']); // Remove oddity ;
             foreach ($listcohorts as $cohort) {
                 if ($cohort->{$this->config->cohort_syncing_field}){
-                    $filter .= '(' . $this->config->{'cohort_'.$this->config->cohort_syncing_field} . '=' . $cohort->{$this->config->cohort_syncing_field}. ')';
+                    $cohort_id = str_replace(array('(',')'), ' ', $cohort->{$this->config->cohort_syncing_field} );
+                    $filter .= '(' . $this->config->{'cohort_'.$this->config->cohort_syncing_field} . '=' . $cohort_id. ')';
                 }
             }
 
@@ -371,12 +372,12 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                                 continue;
                             }
                         }
-    
+
                         if (empty($moodle_user->id)) {
                             if ($this->config->debug_mode){$trace->output("\t" . get_string('err_create_user', 'enrol_ldapcohort', $ldapmember));}
                             continue;
                         }
-    
+
                         try {
                             cohort_add_member($moodle_cohort->id, $moodle_user->id);
                         } catch (Exception $e) {
@@ -404,12 +405,12 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                             $this->mail.=" ".$user." ";
                             $this->_users_removed++;
                         }
-                    
+
                 }
             }
             $trace->output(get_string('user_synchronized', 'enrol_ldapcohort', array('count' => $count, 'discount'=>$discount,'cohort' => $moodle_cohort->name)));
             $this->mail.=get_string('user_synchronized', 'enrol_ldapcohort', array('count' => $count, 'discount'=>$discount,'cohort' => $moodle_cohort->name));
-            
+
         }
     }
 
@@ -469,14 +470,14 @@ class enrol_ldapcohort_plugin extends enrol_plugin
         }
         return $ldap_user;
     }
-    
+
     /**
      * Given a group name (either a RDN or a DN), get the list of users
      * belonging to that group. If the group has nested groups, expand all
      * the intermediate groups and return the full list of users that
      * directly or indirectly belong to the group.
      *
-     * 
+     *
      * @return array the list of users belonging to the group. If $group
      *         is not actually a group, returns array($group).
      */
@@ -527,7 +528,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
      * the intermediate groups and return the full list of users that
      * directly or indirectly belong to the group.
      *
-     * 
+     *
      * @return array the list of users belonging to the group. If $group
      *         is not actually a group, returns array($group).
      */
@@ -549,7 +550,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                             $group_members=$this->get_user_memberof($group[$this->config->memberof_attribute],$from);
                             $groups = array_merge($groups, $group_members);
                         }
-                    }       
+                    }
                     }
                     array_push($groups, $group[$name][0]);
                 }
@@ -564,15 +565,15 @@ class enrol_ldapcohort_plugin extends enrol_plugin
         require_once($CFG->dirroot."/user/lib.php");
         $trace->output(get_string('connectingldap', 'auth_ldap'));
         $ldapconnection = $this->ldap_connect();
-           
+
         /// User Updates - time-consuming (optional)
- 
+
         // Narrow down what fields we need to update
         $attrmaps = $this->auth->ldap_attributes();
         $updatekeys = array_keys($attrmaps);
 
         if (!empty($updatekeys)) { // run updates only if relevant
-            $users = $DB->get_records_sql('SELECT u.username, u.id,'.implode(",",$updatekeys).' 
+            $users = $DB->get_records_sql('SELECT u.username, u.id,'.implode(",",$updatekeys).'
                                              FROM {user} u
                                             WHERE u.deleted = 0 AND u.auth = ? AND u.mnethostid = ?',
                                           array($this->authtype, $CFG->mnet_localhost_id));
@@ -585,10 +586,10 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                     $userid = $user->id;
                     $newinfo = $this->ldap_find_user($user->username,array_values($attrmaps),$this->auth->config->user_attribute) ;
                     if ($newinfo !=false) {
-                        $newinfo=array_change_key_case($newinfo,CASE_LOWER);    
+                        $newinfo=array_change_key_case($newinfo,CASE_LOWER);
                         $updateuser= new stdClass();
                         $updateuser->id=$userid;
-                        $update=false;	
+                        $update=false;
                         foreach ($attrmaps as $key => $values) {
 				            if (isset($newinfo[$values])) {
                                 if (is_array($newinfo[$values])) {
@@ -600,7 +601,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 					$updateuser->{$key} = $newval;
 					$update=true;
 				}
-                            } 
+                            }
                         }
 			if ($update){
 				user_update_user($updateuser);
@@ -619,10 +620,10 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                             $updateuser->auth = 'nologin';
                             user_update_user($updateuser);
                             $trace->output(get_string('auth_dbsuspenduser', 'auth_db', array('name'=>$user->username, 'id'=>$user->id)));
-                            
+
                         }
                     }
-                    
+
 
                 }
                 unset($users); // free mem
@@ -644,7 +645,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                     $updateuser->auth = $this->authtype;
                     user_update_user($updateuser);
                     $trace->output(get_string('auth_dbreviveduser', 'auth_db', array('name'=>$user->username, 'id'=>$user->id)));
-                    
+
                 }
             } else {
                 $trace->output(get_string('nouserentriestorevive', 'auth_ldap'));
@@ -659,7 +660,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 
 
     public function sync_user_enrolments($user) {
-        
+
         if (($this->config->login_sync)&&(($user->auth=="cas")||$user->auth=="ldap")) {
             // Do not try to print anything to the output because this method is called during interactive login.
             $trace = new error_log_progress_trace($this->errorlogtag);
@@ -673,7 +674,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
             if (!is_object($user) or !property_exists($user, 'id')) {
                 throw new coding_exception('Invalid $user parameter in sync_user_enrolments()');
             }
-            
+
             // We may need a lot of memory here
             @set_time_limit(0);
             raise_memory_limit(MEMORY_HUGE);
@@ -681,7 +682,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
             $field=array_search('dn',$this->userfields);
             $field=$field?$field:'username';
             $memberofgroups = $this->ldap_find_user($user->{$field},array($this->config->memberof_attribute),$this->userfields[$field]);
-	    $memberofgroups=array_change_key_case($memberofgroups,CASE_LOWER);    
+	    $memberofgroups=array_change_key_case($memberofgroups,CASE_LOWER);
 	    $memberofgroups = $memberofgroups[$this->config->memberof_attribute];
             if ($this->config->nested_groups){
                 $memberofgroups=$this->get_user_memberof($memberofgroups,array($user->{$field}));
