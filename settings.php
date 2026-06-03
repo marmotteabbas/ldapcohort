@@ -18,7 +18,9 @@ if ($ADMIN->fulltree) {
     */
     require_once(dirname(__FILE__) . '/settingslib.php');
     
-    $run_sync = '<a target="_blank" href="' . $CFG->wwwroot . '/enrol/ldapcohort/sync.php"><strong style="font-size: 110%">' . get_string('here', 'enrol_ldapcohort') . '</strong></a>';
+//    $run_sync = '<a target="_blank" href="' . $CFG->wwwroot . '/enrol/ldapcohort/sync.php"><strong style="font-size: 110%">' . get_string('here', 'enrol_ldapcohort') . '</strong></a>';
+    $run_sync = '<strong style="font-size: 110%">' . get_string('here', 'enrol_ldapcohort') . '</strong>';
+
     
     //--- heading ---
     $settings->add(new admin_setting_heading('enrol_ldapcohort_settings', '', get_string('pluginname_desc', 'enrol_ldapcohort', $run_sync)));
@@ -56,11 +58,11 @@ $cohortfields = array ('name'=>'cn', 'idnumber'=>'cn', 'description'=>'descripti
         $options = array(3=>'3', 2=>'2');
         $settings->add(new admin_setting_configselect('enrol_ldapcohort/ldap_version', get_string('version_key', 'enrol_ldapcohort'), get_string('version', 'enrol_ldapcohort'), 3, $options));
         $settings->add(new admin_setting_configtext('enrol_ldapcohort/ldapencoding', get_string('ldap_encoding_key', 'enrol_ldapcohort'), get_string('ldap_encoding', 'enrol_ldapcohort'), 'utf-8'));
-        $settings->add(new admin_setting_configtext_trim_lower('enrol_ldapcohort/pagesize', get_string('pagesize_key', 'auth_ldap'), get_string('pagesize', 'auth_ldap'), LDAP_DEFAULT_PAGESIZE, true));
+        $settings->add(new admin_setting_ldapcohort_trim_lower('enrol_ldapcohort/pagesize', get_string('pagesize_key', 'auth_ldap'), get_string('pagesize', 'auth_ldap'), LDAP_DEFAULT_PAGESIZE, true));
 
         //--- bind settings
         $settings->add(new admin_setting_heading('enrol_ldapcohort_bind_settings', get_string('bind_settings', 'enrol_ldapcohort'), ''));
-        $settings->add(new admin_setting_configtext_trim_lower('enrol_ldapcohort/bind_dn', get_string('bind_dn_key', 'enrol_ldapcohort'), get_string('bind_dn', 'enrol_ldapcohort'), ''));
+        $settings->add(new admin_setting_ldapcohort_trim_lower('enrol_ldapcohort/bind_dn', get_string('bind_dn_key', 'enrol_ldapcohort'), get_string('bind_dn', 'enrol_ldapcohort'), ''));
         $settings->add(new admin_setting_configpasswordunmask('enrol_ldapcohort/bind_pw', get_string('bind_pw_key', 'enrol_ldapcohort'), get_string('bind_pw', 'enrol_ldapcohort'), ''));
         
         //--- cohort lookup settings

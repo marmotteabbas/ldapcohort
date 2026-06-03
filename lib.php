@@ -1,3 +1,4 @@
+
 <?php
 
 defined('MOODLE_INTERNAL') || die();
@@ -179,7 +180,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
         return $_enabled&&$is_time;
     }
 
-    public function sync_cohorts(progress_trace $trace,$force_unsubscribe=FALSE){
+    public function sync_cohorts(progress_trace $trace,$force_unsubscribe=true){
         global $CFG, $DB;
 
         require_once($CFG->dirroot."/cohort/lib.php");
@@ -292,6 +293,8 @@ class enrol_ldapcohort_plugin extends enrol_plugin
     }
 
     if (count($flat_results)) {
+	$compteur = 0;
+	$trace->output("\t ================  On est parti pour ".count($flat_results)." VET a gérer ====================");
         foreach ($flat_results as $ldapgroup) {
             $ldapgroup = array_change_key_case($ldapgroup, CASE_LOWER);
             $ldapgroupname = $ldapgroup[ $this->config->{'cohort_'.$this->config->cohort_syncing_field}][0];
@@ -306,7 +309,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
 
             $moodle_cohort = $DB->get_record('cohort', array ( $this->config->cohort_syncing_field => $ldapgroupname ));
             if (empty($moodle_cohort)) {
-                if ($this->config->autocreate_cohorts) {
+                if ($this->config->autocreate_cohorts) {die("COHORTE BLOCKER STOP");
                     if (false != ($cohortid = $this->create_cohort($ldapgroupname))) {
                         $moodle_cohort = $DB->get_record('cohort', array ('id' => $cohortid));
                         $trace->output(get_string('cohort_created', 'enrol_ldapcohort', $moodle_cohort->name));
@@ -356,6 +359,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                     unset($addmembers['count']);
                     // Deal with the case where the member attribute holds distinguished names,
                     // but only if the user attribute is not a distinguished name itself.
+		    $trace->output("\t On est parti pour l'ajout de ".sizeof($addmembers)." à la cohorte");
                     foreach ($addmembers as $i => $ldapmember) {
                         $moodle_user = $DB->get_record( 'user', array ( $this->user_sync_field => $ldapmember) );
                         if (empty($moodle_user)) {
@@ -387,6 +391,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                         }
                         $count++;
                         $this->stamp_cohort($moodle_cohort,$ldapgroup[ $this->config->cohort_name][0]);
+			$trace->output("\t °° Ajout USER : ".$ldapmember);
                     }
                 }
                 $discount=0;
@@ -396,19 +401,25 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                         }else{
                         $this->mail.=" users should be unsubscribe: ";
                     }
+			$trace->output("\t On est parti pour la suppresion de ".sizeof($removemembers). "utilisateurs de la cohorte");
                         foreach ($removemembers as $userid => $user) {
                             if ($this->config->unsubscribe_users||$force_unsubscribe){
                                cohort_remove_member($moodle_cohort->id, $userid);
                                 $discount++;
                                 $this->stamp_cohort($moodle_cohort,$ldapgroup[ $this->config->cohort_name][0]);
-                            }
+				$trace->output("\t == Suppresion du user ".$user);
+                            } else {
+				$trace->output("\t >>>>>>>>>>>>>>>>>>>>>>>>> ERREUR : ON EST PAS RENTRE DANS LE IF DE SUPPRESION DES USERS <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
+			    }
                             $this->mail.=" ".$user." ";
                             $this->_users_removed++;
                         }
 
                 }
             }
+	    $compteur++;
             $trace->output(get_string('user_synchronized', 'enrol_ldapcohort', array('count' => $count, 'discount'=>$discount,'cohort' => $moodle_cohort->name)));
+	    $trace->output("----- On en est à ".$compteur."VET TRAITE ----- \n\n\n\n\n");
             $this->mail.=get_string('user_synchronized', 'enrol_ldapcohort', array('count' => $count, 'discount'=>$discount,'cohort' => $moodle_cohort->name));
 
         }
@@ -699,7 +710,7 @@ class enrol_ldapcohort_plugin extends enrol_plugin
                     }
                     $moodle_cohort = $DB->get_record('cohort', array ( $this->config->cohort_syncing_field => $memberof ));
                     if (empty($moodle_cohort)) {
-                        if ($this->config->autocreate_cohorts) {
+                        if ($this->config->autocreate_cohorts) {die("ffffff");
                             if (false != ($cohortid = $this->create_cohort($memberof))) {
                                 $moodle_cohort = $DB->get_record('cohort', array ('id' => $cohortid));
                                 $trace->output(get_string('cohort_created', 'enrol_ldapcohort', $moodle_cohort->name));
@@ -749,8 +760,10 @@ class enrol_ldapcohort_plugin extends enrol_plugin
         }
         if (($name)&&(strpos($cohort->name, $name) === false)) {
             $cohort->name = $name;
+
         }
-        $DB->update_record('cohort', $cohort);
+        
+	$DB->update_record('cohort', $cohort);
 
     }
     private function create_user($ldap_user)
@@ -885,7 +898,8 @@ function get_category_options()
 {
     $displaylist = array();
     $parentlist = array();
-    coursecat::make_categories_list($displaylist, $parentlist, 'moodle/cohort:manage');
+    core_course_category::make_categories_list($displaylist, $parentlist, 'moodle/cohort:manage'); 
+    //coursecat::make_categories_list($displaylist, $parentlist, 'moodle/cohort:manage');
     $options = array();
     $syscontext = context_system::instance();
     if (has_capability('moodle/cohort:manage', $syscontext)) {
